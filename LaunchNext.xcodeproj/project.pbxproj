@@ -16,6 +16,7 @@
 		E41000012F90000100ABCDEF /* AutomaticAppClassification.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41000022F90000100ABCDEF /* AutomaticAppClassification.swift */; };
 		B10000622F70000100ABCDEF /* AppUsageHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000612F70000100ABCDEF /* AppUsageHistory.swift */; };
 		E52000012FA0000100ABCDEF /* UpdateRepositoryConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E52000022FA0000100ABCDEF /* UpdateRepositoryConfiguration.swift */; };
+		F61000012FB0000100ABCDEF /* AdaptiveLaunchpadGridMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F61000022FB0000100ABCDEF /* AdaptiveLaunchpadGridMetrics.swift */; };
 		C200000D2F70000100ABCDEF /* libLaunchNextContextMenuCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000012F70000100ABCDEF /* libLaunchNextContextMenuCore.a */; };
 		C200000E2F70000100ABCDEF /* libLaunchNextContextMenuCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000012F70000100ABCDEF /* libLaunchNextContextMenuCore.a */; };
 		D300000D2F70000100ABCDEF /* libLaunchNextWallpaperCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D30000012F70000100ABCDEF /* libLaunchNextWallpaperCore.a */; };
@@ -55,7 +56,6 @@
 
 /* Begin PBXFileReference section */
 		0D1B0B402E4CDE460083EEF9 /* LaunchNext.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LaunchNext.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0F7A6B1C3E2D4F5A6B7C8D9E /* OpenMultitouchSupport.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = OpenMultitouchSupport.xcconfig; sourceTree = "<group>"; };
 		690FA1FB2E88822200948FA6 /* cs */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = cs; path = cs.lproj/Localizable.strings; sourceTree = "<group>"; };
 		690FA1FC2E88822200948FA6 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A1E2B5C12F4A8A1B00F12345 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -80,6 +80,7 @@
 		E41000022F90000100ABCDEF /* AutomaticAppClassification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AutomaticAppClassification.swift; path = LaunchNext/AutomaticAppClassification.swift; sourceTree = SOURCE_ROOT; };
 		B10000612F70000100ABCDEF /* AppUsageHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppUsageHistory.swift; path = LaunchNext/AppUsageHistory.swift; sourceTree = SOURCE_ROOT; };
 		E52000022FA0000100ABCDEF /* UpdateRepositoryConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UpdateRepositoryConfiguration.swift; path = LaunchNext/UpdateRepositoryConfiguration.swift; sourceTree = SOURCE_ROOT; };
+		F61000022FB0000100ABCDEF /* AdaptiveLaunchpadGridMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AdaptiveLaunchpadGridMetrics.swift; path = LaunchNext/AdaptiveLaunchpadGridMetrics.swift; sourceTree = SOURCE_ROOT; };
 		C20000012F70000100ABCDEF /* libLaunchNextContextMenuCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLaunchNextContextMenuCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		D30000012F70000100ABCDEF /* libLaunchNextWallpaperCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLaunchNextWallpaperCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -147,7 +148,6 @@
 			isa = PBXGroup;
 			children = (
 				A1E2B5CB2F4A8A1B00F12345 /* Localizable.strings */,
-				0F7A6B1D3E2D4F5A6B7C8D9E /* Config */,
 				0D1B0B422E4CDE460083EEF9 /* LaunchNext */,
 				C20000022F70000100ABCDEF /* LaunchNextContextMenuCore */,
 				D30000022F70000100ABCDEF /* LaunchNextWallpaperCore */,
@@ -168,14 +168,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		0F7A6B1D3E2D4F5A6B7C8D9E /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				0F7A6B1C3E2D4F5A6B7C8D9E /* OpenMultitouchSupport.xcconfig */,
-			);
-			path = Config;
-			sourceTree = "<group>";
-		};
 		769FD005305ADEB4008E5EDE /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
@@ -186,6 +178,7 @@
 				B10000412F70000100ABCDEF /* FolderPresentationMotion.swift */,
 				B10000512F70000100ABCDEF /* BackgroundLabelContrast.swift */,
 				B10000232F70000100ABCDEF /* CompactWindowLayout.swift */,
+				F61000022FB0000100ABCDEF /* AdaptiveLaunchpadGridMetrics.swift */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -416,6 +409,7 @@
 				E41000012F90000100ABCDEF /* AutomaticAppClassification.swift in Sources */,
 				B10000622F70000100ABCDEF /* AppUsageHistory.swift in Sources */,
 				E52000012FA0000100ABCDEF /* UpdateRepositoryConfiguration.swift in Sources */,
+				F61000012FB0000100ABCDEF /* AdaptiveLaunchpadGridMetrics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -612,7 +606,6 @@
 		};
 		0D1B0B4C2E4CDE480083EEF9 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0F7A6B1C3E2D4F5A6B7C8D9E /* OpenMultitouchSupport.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -641,7 +634,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 2.5.0;
+				MARKETING_VERSION = 2.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nezuminingen.maclaunch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -658,7 +651,6 @@
 		};
 		0D1B0B4D2E4CDE480083EEF9 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0F7A6B1C3E2D4F5A6B7C8D9E /* OpenMultitouchSupport.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -687,7 +679,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 2.5.0;
+				MARKETING_VERSION = 2.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nezuminingen.maclaunch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

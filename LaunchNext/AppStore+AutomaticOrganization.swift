@@ -8,9 +8,9 @@ extension AppStore {
         }
 
         let originalItemOrder = items.map(\.id)
-        let originalFolderContents = Dictionary(uniqueKeysWithValues: folders.map { folder in
-            (folder.id, folder.apps.map { standardizedFilePath($0.url.path) })
-        })
+        let originalFolderContents = folders.reduce(into: [String: [String]]()) { result, folder in
+            result[folder.id] = folder.apps.map { standardizedFilePath($0.url.path) }
+        }
         let originalFolderByAppPath = folders.reduce(into: [String: String]()) { result, folder in
             for app in folder.apps {
                 result[standardizedFilePath(app.url.path)] = folder.id

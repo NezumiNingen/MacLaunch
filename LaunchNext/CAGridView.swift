@@ -84,8 +84,6 @@ final class CAGridView: NSView, CALayerDelegate, NSDraggingSource {
     var isScrollAnimating = false
     var layoutRevealPageMotion: LayoutRevealFeedback.PageMotion?
     var scrollSensitivity: Double = AppStore.defaultScrollSensitivity
-    var reverseWheelPagingDirection: Bool = false
-    var trackpadVerticalDirection: AppStore.TrackpadVerticalDirection = .natural
     var animationsEnabled: Bool = true
     var animationDuration: Double = 0.3
     var scrollAnimationStartTime: CFTimeInterval = 0
@@ -195,10 +193,6 @@ final class CAGridView: NSView, CALayerDelegate, NSDraggingSource {
     var selectedIndex: Int?
     var hoverTrackingArea: NSTrackingArea?
     var isScrollEnabled: Bool = true
-    var dockDragEnabled: Bool = true
-    let externalAppDragOutset: CGFloat = 18
-    var dockDragSide: AppStore.DockDragSide = .bottom
-    var externalAppDragTriggerDistance: CGFloat = CGFloat(AppStore.defaultDockDragTriggerDistance)
 
     func logIfMismatch(_ tag: String, appPage: Int? = nil) {
         guard debugScrollMismatch else { return }

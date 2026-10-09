@@ -32,7 +32,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Kompaktní a celoobrazovkový režim** - s podporou oddělených nastavení
 - ✅ **Pracovní postup zaměřený na klávesnici** - rychlé vyhledávání, navigace a spouštění
 - ✅ **Podpora CLI / TUI** - kontrolujte a spravujte rozložení z terminálu
-- ✅ **Aktivace přes Hot Corner a nativní gesta** - více způsobů, jak MacLaunch globálně otevřít
 - ✅ **Přetahování aplikací přímo do Docku** - dostupné s renderovacím motorem Core Animation
 - ✅ **Centrum aktualizací s Markdown poznámkami k vydání** - bohatší aktualizace přímo v aplikaci
 - ✅ **Nástroje pro zálohu a obnovení** - bezpečnější export a návrat dat
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Aktivace a vstup
 
-- **Podpora Hot Corner** - otevřete MacLaunch z konfigurovatelného rohu obrazovky
 - **Experimentální podpora nativních gest** - čtyřprsté pinch / tap akce
 - **Podpora globálních zkratek** - otevřete MacLaunch odkudkoli
 - **Přetažení do Docku** - předávejte aplikace přímo do macOS Docku s Core Animation enginem
@@ -213,6 +211,5 @@ Jak se Apple vzdaluje od přizpůsobitelných launcherů aplikací, MacLaunch se
 - Perplexity
 - Google
 
-- Experimentální podpora gest je postavená na [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) a forku od [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

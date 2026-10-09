@@ -2,17 +2,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
     <linearGradient id="background" x1="90" y1="80" x2="934" y2="944" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#181B3D"/>
-      <stop offset="0.52" stop-color="#3433A3"/>
-      <stop offset="1" stop-color="#126F91"/>
+      <stop offset="0" stop-color="#55575A"/>
+      <stop offset="0.48" stop-color="#A9AAAC"/>
+      <stop offset="1" stop-color="#66686B"/>
     </linearGradient>
     <linearGradient id="shine" x1="218" y1="108" x2="771" y2="882" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/>
-      <stop offset="0.48" stop-color="#FFFFFF" stop-opacity="0"/>
-      <stop offset="1" stop-color="#5FE6FF" stop-opacity="0.12"/>
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.30"/>
+      <stop offset="0.48" stop-color="#FFFFFF" stop-opacity="0.02"/>
+      <stop offset="1" stop-color="#E5E7E9" stop-opacity="0.18"/>
     </linearGradient>
   </defs>
   <rect x="28" y="28" width="968" height="968" rx="230" fill="url(#background)"/>
   <rect x="28" y="28" width="968" height="968" rx="230" fill="url(#shine)"/>
-  <rect x="30" y="30" width="964" height="964" rx="228" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="4"/>
+  <rect x="30" y="30" width="964" height="964" rx="228" fill="none" stroke="#FFFFFF" stroke-opacity="0.36" stroke-width="4"/>
 </svg>

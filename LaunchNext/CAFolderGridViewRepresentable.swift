@@ -55,9 +55,6 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
         view.animationDuration = appStore.animationDuration
         view.isLayoutLocked = appStore.isLayoutLocked
         view.scrollSensitivity = appStore.scrollSensitivity
-        view.reverseWheelPagingDirection = appStore.reverseWheelPagingDirection
-        view.reverseWheelVerticalDirection = appStore.reverseWheelVerticalDirection
-        view.trackpadVerticalDirection = appStore.trackpadVerticalDirection
         view.verticalHeaderHeight = verticalHeaderHeight
         view.contextMenuFolderID = folder.id
         let store = appStore

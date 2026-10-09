@@ -32,7 +32,6 @@ macOS Tahoe 移除了 Launchpad，新的介面很難用，也不能充分利用�
 - ✅ **緊湊和全螢幕模式** - 支援分別儲存設定
 - ✅ **鍵盤優先工作流程** - 快速搜尋、導航與啟動
 - ✅ **CLI / TUI 自動化支援** - 可透過終端機檢查和管理佈局
-- ✅ **Hot Corner 與原生手勢啟用** - 提供多種全域開啟方式
 - ✅ **直接拖曳 App 到 Dock** - 在 Core Animation 引擎中可用
 - ✅ **支援 Markdown 版本說明的更新中心** - 更豐富的 App 內更新體驗
 - ✅ **備份與恢復工具** - 更安全的匯出與恢復流程
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### 啟用與輸入
 
-- **Hot Corner 支援** - 從可設定的螢幕角落開啟 MacLaunch
 - **實驗性原生手勢支援** - 四指 pinch / tap 動作
 - **全域快速鍵支援** - 從任何位置開啟 MacLaunch
 - **拖曳 App 到 Dock** - 在 Core Animation 引擎中將 App 直接交給 macOS Dock
@@ -213,6 +211,5 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 - Perplexity
 - Google
 
-- 實驗性手勢支援基於 [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) 及其 [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) 分支。❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

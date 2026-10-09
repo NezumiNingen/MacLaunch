@@ -79,6 +79,263 @@ private struct WindowFrameReportingModifier: ViewModifier {
     }
 }
 
+private struct SettingsButtonAnchorPreferenceKey: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>?
+
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
+    }
+}
+
+/// A single drop falls onto the glass just above the settings control. The
+/// popup itself is revealed by an irregular ink front that spreads from the
+/// point where the drop meets the panel.
+private struct SettingsInkDrop: View {
+    let progress: CGFloat
+
+    private var visibility: CGFloat {
+        let appear = smoothStep(progress / 0.045)
+        let disappear = 1 - smoothStep((progress - 0.39) / 0.17)
+        return appear * disappear
+    }
+
+    private var fall: CGFloat { smoothStep(progress / 0.30) }
+
+    var body: some View {
+        ZStack {
+            InkDropShape()
+                .fill(LinearGradient(
+                    colors: [Color(red: 0.49, green: 0.91, blue: 1),
+                             Color(red: 0.13, green: 0.62, blue: 0.91),
+                             Color(red: 0.16, green: 0.30, blue: 0.72)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+                .shadow(color: .cyan.opacity(0.42), radius: 8, y: 2)
+            Ellipse()
+                .fill(.white.opacity(0.76))
+                .frame(width: 3.2, height: 6)
+                .offset(x: -2, y: -3)
+                .blur(radius: 0.35)
+        }
+        .frame(width: 18, height: 25)
+        .scaleEffect(0.68 + 0.32 * visibility)
+        .opacity(Double(visibility))
+        .offset(y: -22 + 22 * fall)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func smoothStep(_ value: CGFloat) -> CGFloat {
+        let t = min(max(value, 0), 1)
+        return t * t * (3 - 2 * t)
+    }
+}
+
+private struct InkDropShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let h = rect.height
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addCurve(to: CGPoint(x: rect.midX, y: rect.maxY),
+                      control1: CGPoint(x: rect.maxX + 1, y: rect.minY + h * 0.22),
+                      control2: CGPoint(x: rect.maxX + 1, y: rect.minY + h * 0.80))
+        path.addCurve(to: CGPoint(x: rect.midX, y: rect.minY),
+                      control1: CGPoint(x: rect.minX - 1, y: rect.minY + h * 0.80),
+                      control2: CGPoint(x: rect.minX - 1, y: rect.minY + h * 0.22))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// Organic radial mask used to uncover the settings panel as if ink were
+/// spreading from the drop's landing point. The contour is drawn in SwiftUI,
+/// so it works without a Metal shader or a machine-specific GPU dependency.
+private struct InkRevealShape: Shape {
+    var progress: CGFloat
+    var center: CGPoint
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let origin = CGPoint(x: rect.width * center.x, y: rect.height * center.y)
+        let corners = [
+            CGPoint(x: rect.minX, y: rect.minY),
+            CGPoint(x: rect.maxX, y: rect.minY),
+            CGPoint(x: rect.maxX, y: rect.maxY),
+            CGPoint(x: rect.minX, y: rect.maxY)
+        ]
+        let farthest = corners.map { hypot($0.x - origin.x, $0.y - origin.y) }.max() ?? 0
+        let t = smoothStep(progress)
+        let radius = 5 + (farthest + 28 - 5) * t
+        let texture = 1 - smoothStep((progress - 0.70) / 0.30)
+        let amplitude = min(13, farthest * 0.035) * texture
+        let pointCount = 240
+        var points: [CGPoint] = []
+        points.reserveCapacity(pointCount)
+
+        for index in 0..<pointCount {
+            let angle = CGFloat(index) * 2 * .pi / CGFloat(pointCount)
+            let broad = 0.28 * sin(3 * angle + 0.35)
+                + 0.18 * sin(5 * angle - 0.8)
+            let ripples = 0.26 * sin(9 * angle + progress * 8.0)
+                + 0.16 * sin(15 * angle - progress * 13.0)
+                + 0.10 * sin(23 * angle + 1.7)
+            let distance = max(1, radius + amplitude * (broad + ripples))
+            points.append(CGPoint(x: origin.x + cos(angle) * distance,
+                                  y: origin.y + sin(angle) * distance))
+        }
+
+        var path = Path()
+        guard let first = points.first else { return path }
+        path.move(to: first)
+        for point in points.dropFirst() { path.addLine(to: point) }
+        path.closeSubpath()
+        return path
+    }
+
+    private func smoothStep(_ value: CGFloat) -> CGFloat {
+        let t = min(max(value, 0), 1)
+        return t * t * (3 - 2 * t)
+    }
+}
+
+private struct LiquidSettingsPopup: View {
+    @ObservedObject var appStore: AppStore
+    let progress: CGFloat
+    let buttonFrameInWindow: CGRect
+    let onDismiss: () -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let rootFrame = proxy.frame(in: .global)
+            let anchor = settingsAnchor(in: rootFrame, size: size)
+            let scale = LaunchpadUIMetrics.overallScale
+            let panelWidth = min(820 * scale, max(360, size.width - 40))
+            let panelHeight = min(640 * scale, max(320, size.height - 40))
+            let center = panelCenter(anchor: anchor, size: size,
+                                     panelWidth: panelWidth, panelHeight: panelHeight)
+            let popupAnchor = UnitPoint(
+                x: min(max((anchor.x - (center.x - panelWidth / 2)) / panelWidth, 0), 1),
+                y: min(max((anchor.y - (center.y - panelHeight / 2)) / panelHeight, 0), 1)
+            )
+            let clampedProgress = min(max(progress, 0), 1)
+            let cornerRadius = 28 * scale
+
+            ZStack {
+                Button {
+                    guard clampedProgress > 0.92 else { return }
+                    onDismiss()
+                } label: {
+                    Color.black.opacity(0.14 * Double(smoothStep(min(max((clampedProgress - 0.66) / 0.34, 0), 1))))
+                        .frame(width: size.width, height: size.height)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
+
+                popupPanel(width: panelWidth, height: panelHeight, radius: cornerRadius,
+                           progress: clampedProgress,
+                           anchor: popupAnchor)
+                    .position(center)
+
+                SettingsInkDrop(progress: clampedProgress)
+                    .position(x: anchor.x, y: anchor.y - 24)
+            }
+            .frame(width: size.width, height: size.height)
+            .contentShape(Rectangle())
+            .opacity(clampedProgress == 0 ? 0 : 1)
+            .allowsHitTesting(clampedProgress > 0.03)
+        }
+        .ignoresSafeArea()
+    }
+
+    private func popupPanel(width: CGFloat, height: CGFloat, radius: CGFloat,
+                            progress: CGFloat,
+                            anchor: UnitPoint) -> some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.3), radius: 30, y: 14)
+
+            SettingsView(appStore: appStore)
+                .frame(width: width, height: height)
+                .opacity(contentOpacity(for: progress))
+        }
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        .mask {
+            InkRevealShape(
+                progress: min(max((progress - 0.30) / 0.60, 0), 1),
+                center: CGPoint(x: anchor.x, y: anchor.y)
+            )
+            .fill(.white)
+            .frame(width: width, height: height)
+            .blur(radius: 3.5)
+        }
+        .overlay {
+            InkRevealShape(
+                progress: min(max((progress - 0.30) / 0.60, 0), 1),
+                center: CGPoint(x: anchor.x, y: anchor.y)
+            )
+            .stroke(
+                LinearGradient(
+                    colors: [Color(red: 0.04, green: 0.13, blue: 0.25).opacity(0.78),
+                             Color(red: 0.20, green: 0.72, blue: 0.91).opacity(0.78),
+                             Color.white.opacity(0.48),
+                             Color(red: 0.07, green: 0.29, blue: 0.56).opacity(0.72)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+            )
+            .opacity(0.68 * (1 - min(max((progress - 0.82) / 0.18, 0), 1)))
+            .allowsHitTesting(false)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+        .contentShape(Rectangle())
+        .allowsHitTesting(progress > 0.92)
+        .accessibilityAddTraits(.isModal)
+    }
+
+    private func smoothStep(_ value: CGFloat) -> CGFloat {
+        let t = min(max(value, 0), 1)
+        return t * t * (3 - 2 * t)
+    }
+
+    private func contentOpacity(for progress: CGFloat) -> Double {
+        Double(min(max((progress - 0.70) / 0.27, 0), 1))
+    }
+
+    private func settingsAnchor(in rootFrame: CGRect, size: CGSize) -> CGPoint {
+        guard !buttonFrameInWindow.isEmpty else {
+            return CGPoint(x: size.width * 0.645,
+                           y: size.height - 48 * LaunchpadUIMetrics.overallScale)
+        }
+        return CGPoint(x: buttonFrameInWindow.midX - rootFrame.minX,
+                       y: buttonFrameInWindow.midY - rootFrame.minY)
+    }
+
+    private func panelCenter(anchor: CGPoint, size: CGSize,
+                             panelWidth: CGFloat, panelHeight: CGFloat) -> CGPoint {
+        let horizontalInset = min(panelWidth / 2 + 20, size.width / 2)
+        let verticalInset = min(panelHeight / 2 + 20, size.height / 2)
+        let x = min(max(anchor.x, horizontalInset), size.width - horizontalInset)
+        let preferredY = anchor.y - panelHeight / 2 - 18
+        let y = min(max(preferredY, verticalInset), size.height - verticalInset)
+        return CGPoint(x: x, y: y)
+    }
+}
+
 private extension View {
     func reportWindowFrame(_ onChange: @escaping (CGRect) -> Void) -> some View {
         modifier(WindowFrameReportingModifier(onFrameChange: onChange))
@@ -250,8 +507,11 @@ struct LaunchpadView: View {
     @State private var removePageButtonFrameInWindow: CGRect = .zero
     @State private var autoOrganizeButtonFrameInWindow: CGRect = .zero
     @State private var backgroundButtonFrameInWindow: CGRect = .zero
+    @State private var settingsButtonFrameInWindow: CGRect = .zero
     @State private var showBackgroundOptions = false
-    @State private var openSettingsToShortcutSection = false
+    @State private var settingsPopupIsMounted = false
+    @State private var settingsPopupProgress: CGFloat = 0
+    @State private var settingsPopupDismissID = UUID()
     @State private var pageControlButtonIsPressed = false
     @State private var pageControlButtonPressID = UUID()
     @State private var autoOrganizationFeedback: String?
@@ -287,9 +547,6 @@ struct LaunchpadView: View {
     @State private var fpsValue: Double = 0
     @State private var frameTimeMilliseconds: Double = 0
     @State private var isWindowVisible: Bool = false
-    @State private var postOnboardingGridOpacity: Double = 1
-    @State private var postOnboardingGridScale: CGFloat = 1
-    @State private var pendingPostOnboardingReveal: Bool = false
 
     init(appStore: AppStore) {
         _appStore = ObservedObject(wrappedValue: appStore)
@@ -315,16 +572,7 @@ struct LaunchpadView: View {
 
     private var backdropOpacity: Double {
         guard appStore.isFullscreenMode, effectiveBackgroundStyle != .unfiltered else { return 0.0 }
-        if appStore.shouldShowOnboarding {
-            return colorScheme == .dark ? 0.34 : 0.10
-        }
         return colorScheme == .dark ? 0.30 : 0.35
-    }
-
-    private var onboardingLightFilterOpacity: Double {
-        guard appStore.isFullscreenMode, effectiveBackgroundStyle != .unfiltered,
-              appStore.shouldShowOnboarding, colorScheme == .light else { return 0.0 }
-        return 0.20
     }
 
     var filteredItems: [LaunchpadItem] {
@@ -415,6 +663,7 @@ struct LaunchpadView: View {
                  appStore.layoutRevealRequest = nil
                  cancelLegacyItemDrag()
              }
+             updateSettingsPopupPresentation(isPresented: visible)
          }
          .onChange(of: appStore.openFolder?.id) { _, id in
              if id == nil { folderAppToReveal = nil }
@@ -430,21 +679,6 @@ struct LaunchpadView: View {
 
     private var launchpadEventBoundView: some View {
         launchpadBaseView
-        .sheet(isPresented: $appStore.isSetting, onDismiss: {
-            openSettingsToShortcutSection = false
-        }) {
-            SettingsView(appStore: appStore,
-                         openShortcutSettings: openSettingsToShortcutSection)
-        }
-        .onChange(of: appStore.followScrollPagingEnabled) { _, _ in
-            if scrollState.followOffset != 0 || scrollState.accumulatedX != 0 || scrollState.isUserSwiping {
-                scrollState.followOffset = 0
-                scrollState.accumulatedX = 0
-                scrollState.isUserSwiping = false
-                scrollState.followLastUpdateAt = 0
-                scrollState.followLastOffset = 0
-            }
-        }
         .onChange(of: colorScheme) { _, _ in
             appStore.scheduleSystemAppearanceRefresh()
         }
@@ -471,10 +705,6 @@ struct LaunchpadView: View {
           }
           .onChange(of: isSearchFieldFocused) { _, focused in
              if focused { isKeyboardNavigationActive = false }
-         }
-         .onReceive(ControllerInputManager.shared.commands) { command in
-             appStore.layoutRevealRequest = nil
-             handleControllerCommand(command)
          }
          .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.activeSpaceDidChangeNotification)) { _ in
              WallpaperDiagnostics.record("context.spaceChanged")
@@ -523,10 +753,11 @@ struct LaunchpadView: View {
          }
 
            .onAppear {
-              if !appStore.shouldShowOnboarding {
-                  appStore.performInitialScanIfNeeded()
-                  checkCacheStatus()
+              if appStore.isSetting {
+                  updateSettingsPopupPresentation(isPresented: true)
               }
+              appStore.performInitialScanIfNeeded()
+              checkCacheStatus()
               setupKeyHandlers()
               setupInitialSelection()
               setupWindowShownObserver()
@@ -585,24 +816,6 @@ struct LaunchpadView: View {
             stopFPSMonitoring()
             backgroundImageController.clear()
          }
-        .onChange(of: appStore.shouldShowOnboarding) { wasVisible, visible in
-            if wasVisible && !visible {
-                if appStore.isInitialLoading {
-                    postOnboardingGridOpacity = 0
-                    pendingPostOnboardingReveal = true
-                } else {
-                    playPostOnboardingGridReveal()
-                }
-            }
-
-            guard !visible, !appStore.isInitialLoading else { return }
-            appStore.performInitialScanIfNeeded()
-            checkCacheStatus()
-        }
-        .onChange(of: appStore.isInitialLoading) { _, loading in
-            guard !loading, pendingPostOnboardingReveal, !appStore.shouldShowOnboarding else { return }
-            playPostOnboardingGridReveal()
-        }
         .onChange(of: appStore.showFPSOverlay) { _, enabled in
             if enabled {
                 startFPSMonitoring()
@@ -667,6 +880,23 @@ struct LaunchpadView: View {
         }
         .ignoresSafeArea()
         .overlay(launchpadInteractionOverlay)
+        .overlayPreferenceValue(SettingsButtonAnchorPreferenceKey.self) { buttonAnchor in
+            GeometryReader { proxy in
+                if settingsPopupIsMounted {
+                    let rootFrame = proxy.frame(in: .global)
+                    let buttonFrame = buttonAnchor.map {
+                        proxy[$0].offsetBy(dx: rootFrame.minX, dy: rootFrame.minY)
+                    } ?? .zero
+                    LiquidSettingsPopup(
+                        appStore: appStore,
+                        progress: settingsPopupProgress,
+                        buttonFrameInWindow: buttonFrame,
+                        onDismiss: { appStore.isSetting = false }
+                    )
+                    .zIndex(100)
+                }
+            }
+        }
         .overlay(alignment: .top) {
             if let autoOrganizationFeedback {
                 HStack(spacing: 8 * LaunchpadUIMetrics.overallScale) {
@@ -688,6 +918,35 @@ struct LaunchpadView: View {
         }
     }
 
+    private func updateSettingsPopupPresentation(isPresented: Bool) {
+        if isPresented {
+            settingsPopupDismissID = UUID()
+            settingsPopupIsMounted = true
+            settingsPopupProgress = 0
+            DispatchQueue.main.async {
+                guard appStore.isSetting else { return }
+        withAnimation(.linear(duration: 1.45)) {
+            settingsPopupProgress = 1
+        }
+            }
+            return
+        }
+
+        guard settingsPopupIsMounted else {
+            return
+        }
+
+        let dismissID = UUID()
+        settingsPopupDismissID = dismissID
+        withAnimation(.timingCurve(0.38, 0.02, 0.72, 0.30, duration: 0.38)) {
+            settingsPopupProgress = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.52) {
+            guard settingsPopupDismissID == dismissID, !appStore.isSetting else { return }
+            settingsPopupIsMounted = false
+        }
+    }
+
     private var launchpadStyledContent: some View {
         GeometryReader { geo in
             launchpadMainContent(in: geo)
@@ -701,7 +960,11 @@ struct LaunchpadView: View {
         .simultaneousGesture(
             SpatialTapGesture(coordinateSpace: .global)
                 .onEnded { value in
-                    handleWindowBackgroundTap(at: value.location)
+                    // Let a control's Button action publish its state before
+                    // this ancestor classifies the same pointer-up as blank.
+                    DispatchQueue.main.async {
+                        handleWindowBackgroundTap(at: value.location)
+                    }
                 },
             including: .all
         )
@@ -722,11 +985,7 @@ struct LaunchpadView: View {
     private var launchpadBackdropLayer: some View {
         ZStack {
             Color.black.opacity(backdropOpacity)
-            if onboardingLightFilterOpacity > 0 {
-                Color.white.opacity(onboardingLightFilterOpacity)
-            }
         }
-        .animation(.easeInOut(duration: 0.22), value: appStore.shouldShowOnboarding)
         .animation(.easeInOut(duration: 0.22), value: colorScheme)
         .allowsHitTesting(false)
     }
@@ -748,9 +1007,7 @@ struct LaunchpadView: View {
                     .frame(height: bottomPad)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        if appStore.openFolder == nil && !appStore.isFolderNameEditing {
-                            AppDelegate.shared?.hideWindow()
-                        }
+                        deferEdgeDismissal()
                     }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -760,23 +1017,29 @@ struct LaunchpadView: View {
                     .frame(width: sidePad)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        if appStore.openFolder == nil && !appStore.isFolderNameEditing {
-                            AppDelegate.shared?.hideWindow()
-                        }
+                        deferEdgeDismissal()
                     }
                 Spacer(minLength: 0)
                 Rectangle().fill(Color.clear)
                     .frame(width: sidePad)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        if appStore.openFolder == nil && !appStore.isFolderNameEditing {
-                            AppDelegate.shared?.hideWindow()
-                        }
+                        deferEdgeDismissal()
                     }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .ignoresSafeArea()
+    }
+
+    private func deferEdgeDismissal() {
+        DispatchQueue.main.async {
+            guard appStore.openFolder == nil,
+                  !appStore.isSetting,
+                  !appStore.isFolderNameEditing,
+                  !pageControlButtonIsPressed else { return }
+            AppDelegate.shared?.hideWindow()
+        }
     }
 
     private var displayedBackgroundImage: CGImage? {
@@ -808,7 +1071,7 @@ struct LaunchpadView: View {
 
     private var backgroundLabelTints: [BackgroundLabelContrast.Tint] {
         var tints = [BackgroundLabelContrast.Tint(red: 0, green: 0, blue: 0, alpha: backdropOpacity),
-                     .init(red: 1, green: 1, blue: 1, alpha: onboardingLightFilterOpacity)]
+]
         if appStore.backgroundMaskEnabled {
             let mask = colorScheme == .dark ? appStore.backgroundMaskDarkColor : appStore.backgroundMaskLightColor
             tints.append(.init(red: mask.red, green: mask.green, blue: mask.blue, alpha: mask.alpha))
@@ -825,11 +1088,14 @@ struct LaunchpadView: View {
     }
 
     private func handleHeaderBackgroundTap() {
-        guard appStore.openFolder == nil,
-              !appStore.isSetting,
-              !appStore.isFolderNameEditing,
-              draggingItem == nil else { return }
-        AppDelegate.shared?.hideWindow()
+        DispatchQueue.main.async {
+            guard appStore.openFolder == nil,
+                  !appStore.isSetting,
+                  !appStore.isFolderNameEditing,
+                  draggingItem == nil,
+                  !pageControlButtonIsPressed else { return }
+            AppDelegate.shared?.hideWindow()
+        }
     }
 
     private func handleWindowBackgroundTap(at point: CGPoint) {
@@ -850,7 +1116,8 @@ struct LaunchpadView: View {
             || removePageButtonFrameInWindow.contains(point)
             || addPageButtonFrameInWindow.contains(point)
             || autoOrganizeButtonFrameInWindow.contains(point)
-            || backgroundButtonFrameInWindow.contains(point) {
+            || backgroundButtonFrameInWindow.contains(point)
+            || settingsButtonFrameInWindow.contains(point) {
             return
         }
 
@@ -989,26 +1256,31 @@ struct LaunchpadView: View {
                 .frame(height: 16)
 
             GeometryReader { gridGeo in
+                let adaptiveGridViewportSize = CGSize(
+                    width: gridGeo.size.width,
+                    height: max(0, gridGeo.size.height - actualTopPadding - actualBottomPadding)
+                )
                 gridRegion(in: gridGeo,
                            actualTopPadding: actualTopPadding,
                            actualBottomPadding: actualBottomPadding)
                 .clipped()
+                .onAppear {
+                    appStore.updateAdaptiveGridMetrics(for: adaptiveGridViewportSize)
+                }
+                .onChange(of: adaptiveGridViewportSize) { _, size in
+                    appStore.updateAdaptiveGridMetrics(for: size)
+                }
             }
-            .opacity(appStore.shouldShowOnboarding ? 1 : postOnboardingGridOpacity)
-            .scaleEffect(appStore.shouldShowOnboarding ? 1 : postOnboardingGridScale)
 
-            if !appStore.shouldShowOnboarding {
-                LaunchpadFavoritesBar(appStore: appStore, onLaunch: launchApp)
-                    .padding(.top, 12)
-                    .reportWindowFrame { favoritesFrameInWindow = $0 }
-                    .opacity(isFolderOpen ? 0.1 : 1)
-                    .allowsHitTesting(!isFolderOpen)
-            }
+            LaunchpadFavoritesBar(appStore: appStore, onLaunch: launchApp)
+                .padding(.top, 12)
+                .reportWindowFrame { favoritesFrameInWindow = $0 }
+                .opacity(isFolderOpen ? 0.1 : 1)
+                .allowsHitTesting(!isFolderOpen)
 
             // Keep the page slider centered, with the compact organizer capsule
             // sitting beside it like a shorter Dynamic Island.
-            if !appStore.shouldShowOnboarding {
-                ZStack {
+            ZStack {
                     // Keep the glass page bubble visible on a single page too;
                     // the organizer capsule remains anchored beside it.
                     LaunchpadPageIndicator(pageCount: pageControlCount,
@@ -1038,6 +1310,11 @@ struct LaunchpadView: View {
                         .frame(width: PageControlMetrics.backgroundButtonWidth, height: PageControlMetrics.organizerHeight)
                         .offset(x: PageControlMetrics.backgroundButtonOffset(pageCount: pageControlCount))
                         .reportWindowFrame { backgroundButtonFrameInWindow = $0 }
+
+                    settingsButton
+                        .frame(width: PageControlMetrics.buttonSize, height: PageControlMetrics.buttonSize)
+                        .offset(x: PageControlMetrics.settingsButtonOffset(pageCount: pageControlCount))
+                        .reportWindowFrame { settingsButtonFrameInWindow = $0 }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: PageControlMetrics.rowHeight)
@@ -1045,7 +1322,6 @@ struct LaunchpadView: View {
                 .padding(.bottom, CGFloat(indicatorOffset))
                 .opacity(isFolderOpen ? 0.1 : 1)
                 .allowsHitTesting(!isFolderOpen)
-            }
 
             // 在页面指示圆点下方添加动态padding
             if config.isFullscreen {
@@ -1157,13 +1433,33 @@ struct LaunchpadView: View {
             .contentShape(Capsule())
         }
         .buttonStyle(TapGuardPlainButtonStyle(onPressChanged: setPageControlButtonPressed))
-        .disabled(appStore.isLayoutLocked || isFolderOpen || appStore.isSetting)
-        .opacity(appStore.isLayoutLocked ? 0.5 : 1)
+        .disabled(isFolderOpen || appStore.isSetting)
         .help(appStore.localized(.backgroundButton))
         .accessibilityLabel(Text(appStore.localized(.backgroundButton)))
         .popover(isPresented: $showBackgroundOptions, arrowEdge: .bottom) {
             backgroundOptionsPopover
         }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            appStore.isSetting = true
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 12 * LaunchpadUIMetrics.overallScale, weight: .semibold))
+                .foregroundStyle(.primary.opacity(0.9))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background {
+                    Circle().fill(Color.clear).glassEffect(.regular, in: Circle())
+                }
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(TapGuardPlainButtonStyle(onPressChanged: setPageControlButtonPressed))
+        .disabled(isFolderOpen || appStore.isSetting)
+        .help(appStore.localized(.settingsButton))
+        .accessibilityLabel(Text(appStore.localized(.settingsButton)))
+        .anchorPreference(key: SettingsButtonAnchorPreferenceKey.self, value: .bounds) { $0 }
     }
 
     private var backgroundOptionsPopover: some View {
@@ -1438,16 +1734,6 @@ struct LaunchpadView: View {
         }
     }
     
-    private func playPostOnboardingGridReveal() {
-        pendingPostOnboardingReveal = false
-        postOnboardingGridOpacity = 0
-        postOnboardingGridScale = 0.96
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.86, blendDuration: 0.12)) {
-            postOnboardingGridOpacity = 1
-            postOnboardingGridScale = 1
-        }
-    }
-    
     private func gridRegion(in geo: GeometryProxy,
                             actualTopPadding: CGFloat,
                             actualBottomPadding: CGFloat) -> AnyView {
@@ -1471,26 +1757,6 @@ struct LaunchpadView: View {
         // Slightly larger icons in a denser grid that fills each page.
         let iconSize: CGFloat = min(columnWidth, appHeight) * CGFloat(min(max(appStore.iconScale, 0.6), 1.15)) * 0.85
         let effectivePageWidth = geo.size.width + config.pageSpacing
-
-        if appStore.shouldShowOnboarding {
-            let compactOnboardingLayout = geo.size.width < 960
-            return AnyView(
-                FirstLaunchOnboardingPanel(
-                    appStore: appStore,
-                    compactLayout: compactOnboardingLayout,
-                    onOpenShortcutSettings: {
-                        DispatchQueue.main.async {
-                            openSettingsToShortcutSection = true
-                            appStore.isSetting = true
-                        }
-                    }
-                )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .padding(.top, max(8, actualTopPadding))
-                    .padding(.bottom, max(12, actualBottomPadding))
-                    .padding(.horizontal, max(16, geo.size.width * 0.05))
-            )
-        }
 
         if appStore.isInitialLoading {
             return AnyView(
@@ -1593,8 +1859,7 @@ struct LaunchpadView: View {
             )
         }
 
-        let hStackOffset = -CGFloat(appStore.currentPage) * effectivePageWidth
-            + (appStore.followScrollPagingEnabled ? scrollState.followOffset : 0)
+        let hStackOffset = -CGFloat(appStore.currentPage) * effectivePageWidth + scrollState.followOffset
 
         return AnyView(
             ZStack(alignment: .topLeading) {
@@ -2032,546 +2297,6 @@ struct LaunchpadView: View {
     
 }
 
-private struct FirstLaunchOnboardingPanel: View {
-    @ObservedObject var appStore: AppStore
-    let compactLayout: Bool
-    let onOpenShortcutSettings: () -> Void
-    @State private var currentStep: Int = 0
-    @State private var movingForward: Bool = true
-    @State private var isImportingSystem = false
-    @State private var isApplyingPreset = false
-    @State private var statusMessage: String?
-    @State private var statusIsError = false
-    @State private var nativeImportAvailable: Bool = true
-    @State private var hasCheckedNativeImport: Bool = false
-    @State private var hasTriggeredBackgroundPreparation = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: compactLayout ? 14 : 18) {
-            headerView
-
-            HStack(alignment: .top, spacing: compactLayout ? 16 : 22) {
-                if shouldShowStepSidebar {
-                    stepSidebar
-                }
-
-                ZStack {
-                    stepView(for: currentStep)
-                        .id(currentStep)
-                        .transition(stepTransition)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: stepContentHeight)
-            }
-
-            statusInlineRow
-            footerView
-        }
-        .padding(compactLayout ? 16 : 20)
-        .frame(maxWidth: compactLayout ? 680 : 760, alignment: .leading)
-        .task {
-            evaluateNativeImportAvailabilityIfNeeded()
-            triggerBackgroundPreparationIfNeeded()
-        }
-    }
-
-    private var headerView: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Image(systemName: heroSymbolName)
-                .font(.system(size: compactLayout ? 34 : 40, weight: .light))
-                .foregroundStyle(accentBlue)
-                .symbolRenderingMode(.monochrome)
-                .contentTransition(.symbolEffect(.replace))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(appStore.localized(.onboardingFlowWelcomeTitle))
-                    .font(.system(size: compactLayout ? 24 : 28, weight: .bold))
-                Text(appStore.localized(.onboardingFlowWelcomeSubtitle))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-
-            Text(String(format: appStore.localized(.onboardingFlowProgressFormat), visibleStepPosition, visibleStepTotal))
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-        }
-        .overlay(alignment: .bottomLeading) {
-            progressRail
-                .offset(y: compactLayout ? 16 : 18)
-        }
-        .padding(.bottom, compactLayout ? 12 : 14)
-    }
-
-    @ViewBuilder
-    private var statusInlineRow: some View {
-        HStack(spacing: 8) {
-            if let statusMessage, !statusMessage.isEmpty {
-                Image(systemName: statusIsError ? "xmark.octagon.fill" : "checkmark.circle.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(statusIsError ? Color.red : accentBlue)
-                Text(statusMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(statusIsError ? Color.red : Color.secondary)
-                    .lineLimit(1)
-            } else {
-                Color.clear
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: compactLayout ? 20 : 22, alignment: .leading)
-        .animation(.easeInOut(duration: 0.2), value: statusMessage)
-    }
-
-    private var stepSidebar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(Array(visibleStepSequence.enumerated()), id: \.element) { order, step in
-                Button {
-                    goToStep(step)
-                } label: {
-                    HStack(spacing: 10) {
-                        Circle()
-                            .fill(step == currentStep ? accentBlue : Color.secondary.opacity(0.2))
-                            .frame(width: 18, height: 18)
-                            .overlay {
-                                Text("\(order + 1)")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(step == currentStep ? Color.white : Color.secondary)
-                            }
-
-                        Text(sidebarTitle(for: step))
-                            .font(.subheadline.weight(step == currentStep ? .semibold : .regular))
-                            .foregroundStyle(step == currentStep ? Color.primary : Color.secondary)
-                    }
-                    .padding(.vertical, 4)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(width: compactLayout ? 128 : 150, alignment: .topLeading)
-    }
-
-    private var footerView: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(appStore.localized(.onboardingFlowPoweredBy))
-                    .font(.system(size: compactLayout ? 10 : 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-
-                Button(appStore.localized(.onboardingFlowSkip)) {
-                    appStore.completeOnboarding()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .tint(accentBlue)
-            }
-
-            Spacer(minLength: 0)
-
-            if !isAtFirstVisibleStep {
-                Button(appStore.localized(.onboardingFlowBack)) {
-                    goToStep(previousStepIndex(from: currentStep))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .tint(accentBlue)
-            }
-
-            Button(primaryActionTitle) {
-                if isAtLastVisibleStep {
-                    appStore.completeOnboarding()
-                } else {
-                    goToStep(nextStepIndex(from: currentStep))
-                }
-            }
-            .keyboardShortcut(.defaultAction)
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(accentBlue)
-        }
-    }
-
-    private var setupChoiceStep: some View {
-        stepCard(title: appStore.localized(.onboardingFlowLayoutStepTitle),
-                 subtitle: appStore.localized(.onboardingFlowLayoutStepSubtitle),
-                 icon: "square.grid.3x3.topleft.filled") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(appStore.localized(.onboardingFlowLayoutChooseMethod))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                LazyVGrid(columns: setupChoiceColumns, spacing: 12) {
-                    setupChoiceCard(
-                        title: appStore.localized(.onboardingFlowLayoutOptionATitle),
-                        subtitle: appStore.localized(.onboardingFlowLayoutOptionASubtitle),
-                        detail: nativeImportAvailable ? appStore.localized(.onboardingFlowLayoutOptionADetail) : appStore.localized(.onboardingFlowLayoutOptionAUnavailableDetail),
-                        icon: "square.and.arrow.down.on.square.fill",
-                        buttonTitle: nativeImportAvailable ? appStore.localized(.onboardingFlowLayoutOptionAButton) : appStore.localized(.onboardingFlowLayoutOptionAUnavailableButton),
-                        loading: isImportingSystem,
-                        enabled: nativeImportAvailable,
-                        action: importFromSystemLaunchpad
-                    )
-
-                    setupChoiceCard(
-                        title: appStore.localized(.onboardingFlowLayoutOptionBTitle),
-                        subtitle: appStore.localized(.onboardingFlowLayoutOptionBSubtitle),
-                        detail: appStore.localized(.onboardingFlowLayoutOptionBDetail),
-                        icon: "square.grid.3x3.topleft.filled",
-                        buttonTitle: appStore.localized(.onboardingFlowLayoutOptionBButton),
-                        loading: isApplyingPreset,
-                        enabled: true,
-                        action: applyClassicLayoutPreset
-                    )
-                }
-
-                HStack {
-                    Spacer()
-                    Button(appStore.localized(.onboardingFlowLayoutSkipButton)) {
-                        goToStep(1)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                    .tint(accentBlue)
-                    .disabled(isBusy)
-                }
-            }
-        }
-    }
-
-    private var shortcutStep: some View {
-        stepCard(title: appStore.localized(.onboardingFlowShortcutStepTitle),
-                 subtitle: appStore.localized(.onboardingFlowShortcutStepSubtitle),
-                 icon: "command.circle.fill") {
-            Button(appStore.localized(.onboardingFlowShortcutStepButton)) {
-                onOpenShortcutSettings()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(accentBlue)
-        }
-    }
-
-    private var completionStep: some View {
-        VStack(alignment: .leading, spacing: compactLayout ? 16 : 20) {
-            Spacer(minLength: 0)
-
-            HStack(spacing: compactLayout ? 14 : 18) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: compactLayout ? 34 : 40, weight: .semibold))
-                    .foregroundStyle(accentBlue)
-
-                Text(appStore.localized(.onboardingFlowWelcomeTitle))
-                    .font(.system(size: compactLayout ? 34 : 42, weight: .bold))
-            }
-
-            Text(appStore.localized(.onboardingFlowCompletionHeadline))
-                .font(.system(size: compactLayout ? 20 : 24, weight: .semibold))
-                .foregroundStyle(.primary)
-
-            Text(appStore.localized(.onboardingFlowCompletionDescription))
-                .font(.system(size: compactLayout ? 15 : 17))
-                .foregroundStyle(.secondary)
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(.horizontal, compactLayout ? 10 : 14)
-    }
-
-    private func stepCard<Content: View>(title: String,
-                                         subtitle: String,
-                                         icon: String,
-                                         @ViewBuilder content: () -> Content) -> some View {
-        HStack(alignment: .top, spacing: compactLayout ? 18 : 24) {
-            stepSymbol(icon: icon)
-                .frame(width: compactLayout ? 52 : 68, alignment: .top)
-
-            VStack(alignment: .leading, spacing: compactLayout ? 10 : 12) {
-                Text(title)
-                    .font(.system(size: compactLayout ? 22 : 25, weight: .bold))
-
-                Text(subtitle)
-                    .font(.system(size: compactLayout ? 14 : 15))
-                    .foregroundColor(Color(nsColor: .secondaryLabelColor))
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Divider()
-                    .overlay(accentBlue.opacity(0.22))
-
-                content()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(compactLayout ? 14 : 18)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var setupChoiceColumns: [GridItem] {
-        if compactLayout {
-            return [GridItem(.flexible(), spacing: 12)]
-        }
-        return [
-            GridItem(.flexible(), spacing: 12),
-            GridItem(.flexible(), spacing: 12)
-        ]
-    }
-
-    private func setupChoiceCard(title: String,
-                                 subtitle: String,
-                                 detail: String,
-                                 icon: String,
-                                 buttonTitle: String,
-                                 loading: Bool,
-                                 enabled: Bool,
-                                 action: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: compactLayout ? 18 : 20, weight: .semibold))
-                    .foregroundStyle(enabled ? accentBlue : Color.secondary)
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-            }
-
-            Text(subtitle)
-                .font(.system(size: compactLayout ? 16 : 17, weight: .bold))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
-
-            Text(detail)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .lineLimit(2)
-
-            Spacer(minLength: 0)
-
-            Button(action: action) {
-                HStack(spacing: 8) {
-                    if loading {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                    Text(buttonTitle)
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(accentBlue)
-            .disabled(isBusy || !enabled)
-        }
-        .padding(compactLayout ? 12 : 14)
-        .frame(maxWidth: .infinity, minHeight: compactLayout ? 168 : 182, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.secondary.opacity(0.08))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(enabled ? accentBlue.opacity(0.20) : Color.secondary.opacity(0.20), lineWidth: 1)
-        )
-    }
-
-    private func stepView(for step: Int) -> some View {
-        Group {
-            switch step {
-            case 0:
-                setupChoiceStep
-            case 1:
-                shortcutStep
-            case 2:
-                completionStep
-            default:
-                completionStep
-            }
-        }
-    }
-
-    private var stepTransition: AnyTransition {
-        let insertionX: CGFloat = movingForward ? 46 : -46
-        let removalX: CGFloat = movingForward ? -34 : 34
-        return .asymmetric(
-            insertion: .modifier(
-                active: StepMotionModifier(offsetX: insertionX, opacity: 0),
-                identity: StepMotionModifier(offsetX: 0, opacity: 1)
-            ),
-            removal: .modifier(
-                active: StepMotionModifier(offsetX: removalX, opacity: 0),
-                identity: StepMotionModifier(offsetX: 0, opacity: 1)
-            )
-        )
-    }
-
-    private func stepSymbol(icon: String) -> some View {
-        Image(systemName: icon)
-            .font(.system(size: compactLayout ? 42 : 54, weight: .light))
-            .foregroundStyle(accentBlue)
-            .symbolRenderingMode(.monochrome)
-            .contentTransition(.symbolEffect(.replace))
-    }
-
-    private var heroSymbolName: String {
-        switch currentStep {
-        case 0: return "square.grid.3x3"
-        case 1: return "command"
-        default: return "sparkles"
-        }
-    }
-
-    private var accentBlue: Color {
-        Color(red: 0.18, green: 0.48, blue: 1.0)
-    }
-
-    private var progressRail: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.secondary.opacity(0.18))
-                    .frame(height: 4)
-
-                Capsule()
-                    .fill(accentBlue)
-                    .frame(width: progressWidth(totalWidth: proxy.size.width), height: 4)
-            }
-        }
-        .frame(width: compactLayout ? 180 : 210, height: 4)
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: visibleStepPosition)
-    }
-
-    private var primaryActionTitle: String {
-        if isAtLastVisibleStep { return appStore.localized(.onboardingFlowDone) }
-        return appStore.localized(.onboardingFlowNext)
-    }
-
-    private func sidebarTitle(for step: Int) -> String {
-        switch step {
-        case 0: return appStore.localized(.onboardingFlowSidebarLayout)
-        case 1: return appStore.localized(.onboardingFlowSidebarShortcut)
-        default: return appStore.localized(.onboardingFlowSidebarDone)
-        }
-    }
-
-    private func progressWidth(totalWidth: CGFloat) -> CGFloat {
-        let ratio = CGFloat(visibleStepPosition) / CGFloat(max(visibleStepTotal, 1))
-        return max(18, totalWidth * ratio)
-    }
-
-    private var visibleStepSequence: [Int] {
-        [0, 1, 2]
-    }
-
-    private var visibleStepPosition: Int {
-        (visibleStepSequence.firstIndex(of: currentStep) ?? 0) + 1
-    }
-
-    private var visibleStepTotal: Int {
-        visibleStepSequence.count
-    }
-
-    private var isAtFirstVisibleStep: Bool {
-        currentStep == (visibleStepSequence.first ?? 0)
-    }
-
-    private var isAtLastVisibleStep: Bool {
-        currentStep == (visibleStepSequence.last ?? lastStep)
-    }
-
-    private func nextStepIndex(from step: Int) -> Int {
-        guard let idx = visibleStepSequence.firstIndex(of: step) else { return min(step + 1, lastStep) }
-        let nextIdx = min(idx + 1, visibleStepSequence.count - 1)
-        return visibleStepSequence[nextIdx]
-    }
-
-    private func previousStepIndex(from step: Int) -> Int {
-        guard let idx = visibleStepSequence.firstIndex(of: step) else { return max(step - 1, 0) }
-        let previousIdx = max(idx - 1, 0)
-        return visibleStepSequence[previousIdx]
-    }
-
-    private func goToStep(_ target: Int) {
-        let normalized = min(max(0, target), lastStep)
-
-        guard normalized != currentStep else { return }
-
-        let currentIndex = visibleStepSequence.firstIndex(of: currentStep) ?? 0
-        let targetIndex = visibleStepSequence.firstIndex(of: normalized) ?? currentIndex
-        movingForward = targetIndex > currentIndex
-
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.9, blendDuration: 0.18)) {
-            currentStep = normalized
-        }
-    }
-
-    private func evaluateNativeImportAvailabilityIfNeeded() {
-        guard !hasCheckedNativeImport else { return }
-        hasCheckedNativeImport = true
-
-        let available = NativeLaunchpadImporter.hasImportableNativeLaunchpadDatabase()
-        nativeImportAvailable = available
-    }
-
-    private func triggerBackgroundPreparationIfNeeded() {
-        guard !hasTriggeredBackgroundPreparation else { return }
-        hasTriggeredBackgroundPreparation = true
-        appStore.performInitialScanIfNeeded()
-    }
-
-    private var shouldShowStepSidebar: Bool { currentStep != lastStep }
-    private var stepContentHeight: CGFloat {
-        if currentStep == 0 {
-            return compactLayout ? 360 : 390
-        }
-        return compactLayout ? 250 : 290
-    }
-    private var lastStep: Int { 2 }
-    private var isBusy: Bool { isImportingSystem || isApplyingPreset }
-
-    private struct StepMotionModifier: ViewModifier {
-        let offsetX: CGFloat
-        let opacity: Double
-
-        func body(content: Content) -> some View {
-            content
-                .opacity(opacity)
-                .offset(x: offsetX)
-        }
-    }
-
-    private func importFromSystemLaunchpad() {
-        guard !isBusy else { return }
-        isImportingSystem = true
-        Task {
-            let result = await appStore.importFromNativeLaunchpad()
-            await MainActor.run {
-                statusMessage = result.message
-                statusIsError = !result.success
-                isImportingSystem = false
-                if result.success {
-                    goToStep(1)
-                }
-            }
-        }
-    }
-
-    private func applyClassicLayoutPreset() {
-        guard !isBusy else { return }
-        isApplyingPreset = true
-        let success = appStore.applyMacOS26PresetLayout()
-        statusMessage = success ? appStore.localized(.layoutPresetAppliedMessage) : appStore.localized(.layoutPresetApplyFailedMessage)
-        statusIsError = !success
-        isApplyingPreset = false
-        if success {
-            goToStep(1)
-        }
-    }
-}
-
 // MARK: - FPS Monitoring
 extension LaunchpadView {
     private func startFPSMonitoring() {
@@ -2964,62 +2689,6 @@ extension LaunchpadView {
         return event
     }
 
-    private func handleControllerCommand(_ command: ControllerCommand) {
-        guard appStore.gameControllerEnabled else { return }
-        guard ControllerInputManager.shared.isActive else { return }
-
-        guard isWindowVisible else { return }
-        if appStore.isSetting { return }
-
-        switch command {
-        case .move(let direction), .moveRepeat(let direction):
-            activateKeyboardNavigationIfNeeded()
-            synthesizeKeyDown(keyCode: keyCode(for: direction))
-        case .stop(_):
-            break
-        case .select:
-            synthesizeKeyDown(keyCode: 36)
-        case .cancel:
-            synthesizeKeyDown(keyCode: 53)
-        case .menu:
-            break
-        }
-    }
-
-    private func activateKeyboardNavigationIfNeeded() {
-        guard !isKeyboardNavigationActive else { return }
-        isKeyboardNavigationActive = true
-        setSelectionToPageStart(appStore.currentPage)
-        clampSelection()
-    }
-
-    private func keyCode(for direction: ControllerCommand.Direction) -> UInt16 {
-        switch direction {
-        case .left: return 123
-        case .right: return 124
-        case .up: return 126
-        case .down: return 125
-        }
-    }
-
-    private func synthesizeKeyDown(keyCode: UInt16) {
-        guard let event = NSEvent.keyEvent(
-            with: .keyDown,
-            location: .zero,
-            modifierFlags: [],
-            timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: 0,
-            context: nil,
-            characters: "",
-            charactersIgnoringModifiers: "",
-            isARepeat: false,
-            keyCode: keyCode
-        ) else {
-            return
-        }
-        _ = handleKeyEvent(event)
-    }
-
     private func moveSelection(dx: Int, dy: Int) {
         guard let current = selectedIndex else { return }
         let columns = config.columns
@@ -3372,7 +3041,6 @@ extension LaunchpadView {
     private func handleWheelScroll(_ primaryDelta: CGFloat) {
         if primaryDelta == 0 { return }
         let direction = primaryDelta > 0 ? 1 : -1
-        let effectiveDirection = appStore.reverseWheelPagingDirection ? -direction : direction
         if scrollState.wheelLastDirection != direction { scrollState.wheelAccumulated = 0 }
         scrollState.wheelLastDirection = direction
         scrollState.wheelAccumulated += abs(primaryDelta)
@@ -3383,7 +3051,7 @@ extension LaunchpadView {
         let now = Date()
         if scrollState.wheelAccumulated >= threshold {
             if let last = scrollState.wheelLastFlipAt, now.timeIntervalSince(last) < wheelFlipCooldown { return }
-            if effectiveDirection > 0 { navigateToNextPage() } else { navigateToPreviousPage() }
+            if direction > 0 { navigateToNextPage() } else { navigateToPreviousPage() }
             scrollState.wheelLastFlipAt = now
             // Reset so one tick flips at most once.
             scrollState.wheelAccumulated = 0
@@ -3412,12 +3080,7 @@ extension LaunchpadView {
                               pageWidth: CGFloat) {
         guard !isFolderOpen else { return }
 
-        let verticalDelta: CGFloat
-        if isPrecise {
-            verticalDelta = appStore.trackpadVerticalDirection == .natural ? deltaY : -deltaY
-        } else {
-            verticalDelta = -deltaY
-        }
+        let verticalDelta = isPrecise ? deltaY : -deltaY
         let primaryDelta = abs(deltaX) >= abs(deltaY) ? deltaX : verticalDelta
 
         // Non-precise wheel: accumulate deltas and apply a short cooldown.
@@ -3426,35 +3089,7 @@ extension LaunchpadView {
             return
         }
 
-        // Precise scroll without follow: accumulate and flip once past the threshold.
-        if !appStore.followScrollPagingEnabled {
-            // Skip momentum to keep one flip per gesture.
-            if isMomentum { return }
-            // Treat vertical input as horizontal paging.
-            let delta = primaryDelta
-            switch phase {
-            case .began:
-                scrollState.isUserSwiping = true
-                scrollState.accumulatedX = 0
-            case .changed:
-                scrollState.isUserSwiping = true
-                scrollState.accumulatedX += delta
-            case .ended, .cancelled:
-                let threshold = flipThreshold(pageWidth)
-                if scrollState.accumulatedX <= -threshold {
-                    navigateToNextPage()
-                } else if scrollState.accumulatedX >= threshold {
-                    navigateToPreviousPage()
-                }
-                scrollState.accumulatedX = 0
-                scrollState.isUserSwiping = false
-            default:
-                break
-            }
-            return
-        }
-
-        // Follow-scroll mode: drag-like offset while scrolling, then settle.
+        // Drag-like page tracking while scrolling, then settle.
         if phase == [] {
             handleWheelScroll(primaryDelta)
             return
@@ -3915,11 +3550,9 @@ func arrowDelta(for keyCode: UInt16) -> (dx: Int, dy: Int)? {
 extension LaunchpadView {
     /// 检查缓存状态
     private func checkCacheStatus() {
-        guard !appStore.shouldShowOnboarding else { return }
         // 如果缓存无效，触发重新扫描
         if !AppCacheManager.shared.isCacheValid {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                guard !self.appStore.shouldShowOnboarding else { return }
                 self.appStore.performInitialScanIfNeeded()
             }
         }

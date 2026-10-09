@@ -32,7 +32,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Компактный и полноэкранный режимы** - с поддержкой раздельных настроек
 - ✅ **Клавиатурный workflow** - быстрый поиск, навигация и запуск
 - ✅ **Поддержка CLI / TUI** - просматривайте и управляйте компоновкой из терминала
-- ✅ **Активация через Hot Corner и нативные жесты** - несколько способов глобально открыть MacLaunch
 - ✅ **Перетаскивание приложений прямо в Dock** - доступно в движке Core Animation
 - ✅ **Центр обновлений с Markdown release notes** - более богатый встроенный опыт обновлений
 - ✅ **Инструменты резервного копирования и восстановления** - более безопасный экспорт и возврат данных
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Активация и ввод
 
-- **Поддержка Hot Corner** - открывайте MacLaunch из настраиваемого угла экрана
 - **Экспериментальная поддержка нативных жестов** - действия pinch / tap четырьмя пальцами
 - **Поддержка глобальных горячих клавиш** - открывайте MacLaunch откуда угодно
 - **Перетаскивание в Dock** - передавайте приложения прямо в Dock macOS через движок Core Animation
@@ -213,6 +211,5 @@ A: Сначала включите интерфейс командной стр�
 - Perplexity
 - Google
 
-- Экспериментальная поддержка жестов построена на [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) и форке [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

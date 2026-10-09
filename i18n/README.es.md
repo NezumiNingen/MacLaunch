@@ -32,7 +32,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Modos compacto y pantalla completa** - con soporte para ajustes separados
 - ✅ **Flujo centrado en teclado** - búsqueda, navegación y apertura rápidas
 - ✅ **Soporte CLI / TUI** - inspecciona y gestiona tu diseño desde la terminal
-- ✅ **Activación con Hot Corner y gestos nativos** - varias formas de abrir MacLaunch globalmente
 - ✅ **Arrastra apps directamente al Dock** - disponible con el motor Core Animation
 - ✅ **Centro de actualizaciones con notas en Markdown** - experiencia de actualización integrada más rica
 - ✅ **Herramientas de copia de seguridad y restauración** - exportaciones y recuperación más seguras
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Activación y entrada
 
-- **Soporte Hot Corner** - abre MacLaunch desde una esquina configurable de la pantalla
 - **Soporte experimental de gestos nativos** - acciones de pinch / tap con cuatro dedos
 - **Soporte de atajos globales** - abre MacLaunch desde cualquier lugar
 - **Arrastrar al Dock** - entrega apps directamente al Dock de macOS con el motor Core Animation
@@ -213,6 +211,5 @@ A medida que Apple se aleja de los lanzadores personalizables, MacLaunch intenta
 - Perplexity
 - Google
 
-- El soporte experimental de gestos está construido sobre [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) y el fork de [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

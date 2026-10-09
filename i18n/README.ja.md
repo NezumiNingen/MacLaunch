@@ -32,7 +32,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **コンパクト / フルスクリーン** - それぞれ別設定を保持可能
 - ✅ **キーボード中心の操作** - 高速検索、ナビゲーション、起動
 - ✅ **CLI / TUI 自動化サポート** - ターミナルからレイアウト確認と管理が可能
-- ✅ **Hot Corner とネイティブジェスチャー起動** - 複数のグローバル起動方法
 - ✅ **アプリを Dock に直接ドラッグ** - Core Animation エンジンで利用可能
 - ✅ **Markdown リリースノート対応の更新センター** - より充実したアプリ内更新体験
 - ✅ **バックアップ / 復元ツール** - より安全なエクスポートと復元フロー
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### 起動と入力
 
-- **Hot Corner 対応** - 設定可能な画面コーナーから MacLaunch を起動
 - **実験的ネイティブジェスチャー対応** - 4 本指 pinch / tap アクション
 - **グローバルショートカット対応** - どこからでも MacLaunch を開ける
 - **Dock へのドラッグ** - Core Animation エンジンで macOS Dock に直接アプリを渡せる
@@ -213,6 +211,5 @@ Apple がカスタマイズ可能なランチャーから離れていく中で�
 - Perplexity
 - Google
 
-- 実験的ジェスチャー機能は [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) と [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) の fork をベースにしています。❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

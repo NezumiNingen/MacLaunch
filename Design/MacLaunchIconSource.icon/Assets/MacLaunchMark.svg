@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" x1="200" y1="245" x2="830" y2="465" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.16"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="210" y1="250" x2="824" y2="745" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECEEEF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Three small app tiles sit above the search pill, matching the Launchpad layout. -->
+  <g fill="url(#tile)" stroke="#FFFFFF" stroke-opacity="0.66" stroke-width="8">
+    <rect x="178" y="246" width="188" height="188" rx="48"/>
+    <rect x="418" y="246" width="188" height="188" rx="48"/>
+    <rect x="658" y="246" width="188" height="188" rx="48"/>
+  </g>
+
+  <!-- Messages, music, and photos are simple enough to stay legible at Dock size. -->
+  <g fill="none" stroke="url(#mark)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M224 292H320Q338 292 338 310V354Q338 372 320 372H276L248 394V372H224Q206 372 206 354V310Q206 292 224 292Z"/>
+    <path d="M490 348V294L548 280V332"/>
+    <path d="M490 348C490 360 477 368 465 364C454 360 454 346 465 340C473 336 482 338 490 344"/>
+    <path d="M548 332C548 344 535 352 523 348C512 344 512 330 523 324C531 320 540 322 548 328"/>
+    <rect x="704" y="290" width="96" height="88" rx="12"/>
+    <circle cx="774" cy="316" r="9" fill="url(#mark)" stroke="none"/>
+    <path d="M718 362L742 336L758 352L770 342L788 362"/>
+  </g>
+
+  <!-- A wide search field occupies the bottom row. -->
+  <rect x="156" y="584" width="712" height="176" rx="88" fill="url(#tile)" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="10"/>
+  <g fill="none" stroke="url(#mark)" stroke-width="20" stroke-linecap="round">
+    <circle cx="260" cy="664" r="30"/>
+    <path d="M282 687L309 714"/>
+  </g>
+  <rect x="356" y="650" width="422" height="26" rx="13" fill="#FFFFFF" fill-opacity="0.54"/>
+</svg>

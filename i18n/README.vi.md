@@ -32,7 +32,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Chế độ gọn và toàn màn hình** - với hỗ trợ lưu cài đặt riêng
 - ✅ **Workflow ưu tiên bàn phím** - tìm kiếm, điều hướng và mở ứng dụng nhanh
 - ✅ **Hỗ trợ CLI / TUI** - kiểm tra và quản lý bố cục từ terminal
-- ✅ **Kích hoạt bằng Hot Corner và cử chỉ gốc** - nhiều cách mở MacLaunch toàn cục
 - ✅ **Kéo ứng dụng trực tiếp vào Dock** - có sẵn với engine Core Animation
 - ✅ **Trung tâm cập nhật với release notes Markdown** - trải nghiệm cập nhật trong ứng dụng phong phú hơn
 - ✅ **Công cụ sao lưu và khôi phục** - xuất và phục hồi an toàn hơn
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Kích hoạt và đầu vào
 
-- **Hỗ trợ Hot Corner** - mở MacLaunch từ một góc màn hình có thể cấu hình
 - **Hỗ trợ cử chỉ gốc thử nghiệm** - hành động pinch / tap bằng bốn ngón tay
 - **Hỗ trợ phím tắt toàn cục** - mở MacLaunch từ bất cứ đâu
 - **Kéo vào Dock** - chuyển ứng dụng trực tiếp vào Dock của macOS bằng engine Core Animation
@@ -152,7 +150,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### Trợ năng và điều hướng
 
 - **Hỗ trợ phản hồi giọng nói** - đọc tên ứng dụng và thư mục khi điều hướng
-- **Hỗ trợ tay cầm** - điều khiển MacLaunch và thư mục bằng game controller
 - **Tương tác ưu tiên bàn phím** - tìm kiếm và điều hướng nhanh mà không cần chuột
 
 ## Hiệu năng và độ ổn định
@@ -213,6 +210,5 @@ Khi Apple ngày càng rời xa các launcher có thể tùy biến, MacLaunch c�
 - Perplexity
 - Google
 
-- Hỗ trợ cử chỉ thử nghiệm được xây dựng trên [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) và fork của [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

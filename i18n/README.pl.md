@@ -246,7 +246,6 @@ Gdy Apple odchodzi od konfigurowalnych interfejsów, MacLaunch jest krokiem w st
 
 
 
-- Obsługa eksperymentalnych gestów opiera się na [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) oraz forku autorstwa [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

@@ -3,8 +3,6 @@ import AppKit
 import SwiftData
 import Combine
 import QuartzCore
-import Carbon
-import Carbon.HIToolbox
 
 extension Notification.Name {
     static let launchpadWindowShown = Notification.Name("LaunchpadWindowShown")
@@ -33,11 +31,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
     private var lastShowAt: Date?
     private var cancellables = Set<AnyCancellable>()
     private var appLaunchUsageObserver: NSObjectProtocol?
-    private var hotKeyRef: EventHotKeyRef?
-    private var hotKeyEventHandler: EventHandlerRef?
-    // private var aiHotKeyRef: EventHotKeyRef?
-    private let launchpadHotKeySignature = fourCharCode("LNXK")
-    // private let aiOverlayHotKeySignature = fourCharCode("AIOV")
     
     let appStore: AppStore
     var modelContainer: ModelContainer?
@@ -54,15 +47,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
     private var activeModalDialogCount = 0
     private var cliEndpointSocketPath: String?
     private var cliEndpointMonitorTimer: DispatchSourceTimer?
-    private var hotCornerMonitor: HotCornerMonitor?
-    // Experimental low-level gesture monitor.
-    // Remove this property if gesture support is dropped together with
-    // bindGesturePreference()/updateGestureMonitor()/handleGestureTrigger().
-    private var gestureMonitor: GestureMonitor?
-    // Wake recovery work items for the experimental gesture monitor.
-    // If gesture support is removed later, delete this together with
-    // bindGestureWakeRecovery()/scheduleGestureWakeRecovery().
-    private var gestureWakeRecoveryWorkItems: [DispatchWorkItem] = []
 
     override init() {
         AppStore.migrateLegacyPreferencesIfNeeded()
@@ -79,8 +63,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         // let copilotProvider = CopilotProvider(authStore: authStore)
         // LLMProviderRegistry.shared.register(provider: copilotProvider)
 
-        appStore.syncGlobalHotKeyRegistration()
-        // appStore.syncAIOverlayHotKeyRegistration()
 
         SoundManager.shared.bind(appStore: appStore)
         VoiceManager.shared.bind(appStore: appStore)
@@ -93,17 +75,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         appStore.startAutoRescan()
 
         bindAppearancePreference()
-        bindControllerPreference()
-        bindControllerMenuToggle()
         bindSystemUIVisibility()
         bindCLICodePreference()
-        bindHotCornerPreference()
-        // Experimental gesture wiring entry point.
-        // Remove this call if the gesture feature is removed later.
-        bindGesturePreference()
-        // Experimental wake recovery for low-level gesture input.
-        // Remove this call if gesture support is removed later.
-        bindGestureWakeRecovery()
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.applyAppearancePreference(self.appStore.appearancePreference)
@@ -340,201 +313,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
                 self?.updateCLIIPCServer(enabled: enabled)
             }
             .store(in: &cancellables)
-    }
-
-    private func bindHotCornerPreference() {
-        Publishers.CombineLatest4(
-            appStore.$hotCornerEnabled.removeDuplicates(),
-            appStore.$hotCornerPosition.removeDuplicates(),
-            appStore.$hotCornerTriggerDelay.removeDuplicates(),
-            appStore.$hotCornerHitboxSize.removeDuplicates()
-        )
-        .receive(on: RunLoop.main)
-        .sink { [weak self] enabled, position, delay, hitboxSize in
-            self?.updateHotCornerMonitor(
-                enabled: enabled,
-                position: position,
-                triggerDelay: delay,
-                hitboxSize: hitboxSize
-            )
-        }
-        .store(in: &cancellables)
-    }
-
-    private func bindGesturePreference() {
-        // Experimental gesture settings are funneled through one Combine pipeline
-        // so the monitor can be rebuilt from a single source of truth.
-        // If gesture support is removed later, delete this binder together with
-        // updateGestureMonitor()/handleGestureTrigger() and the Gesture folder.
-        Publishers.CombineLatest(
-            Publishers.CombineLatest4(
-                appStore.$gestureEnabled.removeDuplicates(),
-                appStore.$gestureCloseOnPinchOut.removeDuplicates(),
-                appStore.$gestureTapAction.removeDuplicates(),
-                appStore.$gestureFingerCount.removeDuplicates()
-            ),
-            Publishers.CombineLatest(
-                appStore.$gestureDeviceSelectionMode.removeDuplicates(),
-                appStore.$gestureSelectedDeviceIDs.removeDuplicates()
-            )
-        )
-        .receive(on: RunLoop.main)
-        .sink { [weak self] combined, deviceSelection in
-            let (enabled, closeOnPinchOut, tapAction, fingerCount) = combined
-            let (deviceSelectionMode, selectedDeviceIDs) = deviceSelection
-            self?.updateGestureMonitor(
-                enabled: enabled,
-                closeOnPinchOut: closeOnPinchOut,
-                tapAction: tapAction,
-                fingerCount: fingerCount,
-                deviceSelectionMode: deviceSelectionMode,
-                selectedDeviceIDs: selectedDeviceIDs
-            )
-        }
-        .store(in: &cancellables)
-    }
-
-    // Rebuilds the experimental gesture listener after sleep/wake.
-    // The low-level multitouch listener can become stale after wake even when
-    // its local "isListening" flag still looks healthy. If gesture support is
-    // removed later, delete this binder together with schedule/cancel helpers.
-    private func bindGestureWakeRecovery() {
-        let center = NSWorkspace.shared.notificationCenter
-
-        center.publisher(for: NSWorkspace.willSleepNotification)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.cancelGestureWakeRecovery()
-            }
-            .store(in: &cancellables)
-
-        center.publisher(for: NSWorkspace.didWakeNotification)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.scheduleGestureWakeRecovery()
-            }
-            .store(in: &cancellables)
-    }
-
-    private func scheduleGestureWakeRecovery() {
-        guard appStore.gestureEnabled || appStore.gestureTapAction != .off else { return }
-        guard !isTerminating else { return }
-
-        cancelGestureWakeRecovery()
-
-        // Rebuild twice: once after the initial wake settles, then again as a
-        // fallback for longer sleep/wake paths where the trackpad comes back
-        // later than NSWorkspaceDidWakeNotification.
-        for delay in [0.8, 2.0] {
-            let workItem = DispatchWorkItem { [weak self] in
-                guard let self else { return }
-                guard !self.isTerminating else { return }
-                guard self.appStore.gestureEnabled || self.appStore.gestureTapAction != .off else { return }
-                self.appStore.refreshGestureDeviceInventory()
-                self.gestureMonitor?.restart()
-            }
-            gestureWakeRecoveryWorkItems.append(workItem)
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
-        }
-    }
-
-    private func cancelGestureWakeRecovery() {
-        gestureWakeRecoveryWorkItems.forEach { $0.cancel() }
-        gestureWakeRecoveryWorkItems.removeAll()
-    }
-
-    private func updateHotCornerMonitor(enabled: Bool,
-                                        position: AppStore.HotCornerPosition,
-                                        triggerDelay: Double,
-                                        hitboxSize: Double) {
-        let configuration = HotCornerMonitor.Configuration(
-            isEnabled: enabled,
-            position: position,
-            triggerDelay: triggerDelay,
-            hitboxSize: CGFloat(hitboxSize)
-        )
-
-        if hotCornerMonitor == nil {
-            hotCornerMonitor = HotCornerMonitor(configuration: configuration) { [weak self] in
-                DispatchQueue.main.async {
-                    self?.handleHotCornerTrigger()
-                }
-            }
-        }
-
-        hotCornerMonitor?.update(configuration: configuration)
-    }
-
-    private func handleHotCornerTrigger() {
-        guard !isTerminating else { return }
-        guard !appStore.isSetting else { return }
-        guard !isPerformingExternalSystemDrag else { return }
-        guard !isAnimatingWindow else { return }
-
-        if windowIsVisible {
-            guard appStore.hotCornerToggleWhenOpen else { return }
-            hideWindow()
-            return
-        }
-
-        showWindow()
-    }
-
-    // Bridges Settings state into the experimental gesture monitor.
-    // If gesture support needs to be removed later, this is one of the main seams:
-    // delete LaunchNext/Gesture/, remove the Gesture settings/AppStore fields,
-    // then remove this method together with bindGesturePreference().
-    private func updateGestureMonitor(enabled: Bool,
-                                      closeOnPinchOut: Bool,
-                                      tapAction: AppStore.GestureTapAction,
-                                      fingerCount: AppStore.GestureFingerCount,
-                                      deviceSelectionMode: GestureDeviceSelectionMode,
-                                      selectedDeviceIDs: [String]) {
-        let configuration = GestureMonitor.Configuration(
-            isEnabled: enabled || tapAction != .off,
-            closeOnPinchOutEnabled: closeOnPinchOut,
-            tapEnabled: tapAction != .off,
-            tapTogglesWindow: tapAction == .toggle,
-            deviceSelectionMode: deviceSelectionMode,
-            selectedDeviceIDs: selectedDeviceIDs,
-            requiredFingerCount: fingerCount.rawValue,
-            minimumOpenParticipatingFingerCount: fingerCount.minimumOpenParticipatingFingerCount
-        )
-
-        if gestureMonitor == nil {
-            gestureMonitor = GestureMonitor(configuration: configuration) { [weak self] action in
-                DispatchQueue.main.async {
-                    self?.handleGestureTrigger(action: action)
-                }
-            }
-        }
-
-        gestureMonitor?.update(configuration: configuration)
-    }
-
-    // Maps recognized gesture actions onto the existing window flow.
-    // Keeping the behavior translation here avoids spreading experimental gesture
-    // branches into showWindow()/hideWindow() and makes later rollback simple:
-    // remove this handler and the gesture monitor callback wiring.
-    private func handleGestureTrigger(action: GestureTriggerAction) {
-        guard !isTerminating else { return }
-        guard !isPerformingExternalSystemDrag else { return }
-        guard !isAnimatingWindow else { return }
-
-        switch action {
-        case .open:
-            guard !windowIsVisible else { return }
-            showWindow()
-        case .close:
-            guard windowIsVisible else { return }
-            hideWindow()
-        case .toggle:
-            if windowIsVisible {
-                hideWindow()
-            } else {
-                showWindow()
-            }
-        }
     }
 
     private func updateCLIIPCServer(enabled: Bool) {
@@ -1291,97 +1069,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         return DispatchQueue.main.sync(execute: work)
     }
 
-    // MARK: - Global Hotkey
-
-    func updateGlobalHotKey(configuration: AppStore.HotKeyConfiguration?) {
-        unregisterGlobalHotKey()
-        guard let configuration else { return }
-        registerGlobalHotKey(configuration)
-    }
-
-    // func updateAIOverlayHotKey(configuration: AppStore.HotKeyConfiguration?) {
-    //     unregisterAIOverlayHotKey()
-    //     guard let configuration, appStore.isAIEnabled else { return }
-    //     registerAIOverlayHotKey(configuration)
-    // }
-
-    private func registerGlobalHotKey(_ configuration: AppStore.HotKeyConfiguration) {
-        ensureHotKeyEventHandler()
-        let hotKeyID = EventHotKeyID(signature: launchpadHotKeySignature, id: 1)
-        let status = RegisterEventHotKey(configuration.keyCodeUInt32,
-                                         configuration.carbonModifierFlags,
-                                         hotKeyID,
-                                         GetEventDispatcherTarget(),
-                                         0,
-                                         &hotKeyRef)
-        if status != noErr {
-            NSLog("MacLaunch: Failed to register launchpad hotkey (status %d)", status)
-            hotKeyRef = nil
-        }
-    }
-
-    // private func registerAIOverlayHotKey(_ configuration: AppStore.HotKeyConfiguration) {
-    //     ensureHotKeyEventHandler()
-    //     var hotKeyID = EventHotKeyID(signature: aiOverlayHotKeySignature, id: 1)
-    //     let status = RegisterEventHotKey(configuration.keyCodeUInt32,
-    //                                      configuration.carbonModifierFlags,
-    //                                      hotKeyID,
-    //                                      GetEventDispatcherTarget(),
-    //                                      0,
-    //                                      &aiHotKeyRef)
-    //     if status != noErr {
-    //         NSLog("LaunchNext: Failed to register AI overlay hotkey (status %d)", status)
-    //         aiHotKeyRef = nil
-    //     }
-    // }
-
-    private func unregisterGlobalHotKey() {
-        if let hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
-            self.hotKeyRef = nil
-        }
-        cleanUpHotKeyEventHandlerIfNeeded()
-    }
-
-    // private func unregisterAIOverlayHotKey() {
-    //     if let aiHotKeyRef {
-    //         UnregisterEventHotKey(aiHotKeyRef)
-    //         self.aiHotKeyRef = nil
-    //     }
-    //     cleanUpHotKeyEventHandlerIfNeeded()
-    // }
-
-    private func cleanUpHotKeyEventHandlerIfNeeded() {
-        // if hotKeyRef == nil && aiHotKeyRef == nil, let handler = hotKeyEventHandler {
-        if hotKeyRef == nil, let handler = hotKeyEventHandler {
-            RemoveEventHandler(handler)
-            hotKeyEventHandler = nil
-        }
-    }
-
-    private func ensureHotKeyEventHandler() {
-        guard hotKeyEventHandler == nil else { return }
-        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-        let status = InstallEventHandler(GetEventDispatcherTarget(), hotKeyEventCallback, 1, &eventType, UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()), &hotKeyEventHandler)
-        if status != noErr {
-            NSLog("MacLaunch: Failed to install hotkey handler (status %d)", status)
-        }
-    }
-
-    fileprivate func handleHotKeyEvent(signature: OSType, id: UInt32) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            switch (signature, id) {
-            case (self.launchpadHotKeySignature, 1):
-                self.toggleWindow()
-            // case (self.aiOverlayHotKeySignature, 1):
-            //     self.appStore.toggleAIOverlayPreview()
-            default:
-                break
-            }
-        }
-    }
-
     private func setupWindow(showImmediately: Bool = true) {
         guard let screen = NSScreen.main else { return }
         let rect = calculateContentRect(for: screen)
@@ -1428,37 +1115,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
     }
 
     
-
-    private func bindControllerPreference() {
-        appStore.$gameControllerEnabled
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { enabled in
-                if enabled {
-                    ControllerInputManager.shared.start()
-                } else {
-                    ControllerInputManager.shared.stop()
-                }
-            }
-            .store(in: &cancellables)
-    }
-
-    private func bindControllerMenuToggle() {
-        ControllerInputManager.shared.commands
-            .receive(on: RunLoop.main)
-            .sink { [weak self] command in
-                guard let self else { return }
-                guard case .menu = command else { return }
-                guard self.appStore.gameControllerEnabled else { return }
-
-                if self.appStore.gameControllerMenuTogglesLaunchpad {
-                    self.toggleWindow()
-                } else if self.windowIsVisible {
-                    self.hideWindow()
-                }
-            }
-            .store(in: &cancellables)
-    }
 
     private func bindSystemUIVisibility() {
         Publishers.CombineLatest3(
@@ -1604,7 +1260,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
     deinit {
         stopCLIEndpointMonitor()
         cliIPCServer?.stop()
-        unregisterGlobalHotKey()
     }
     
     func updateWindowMode(isFullscreen: Bool) {
@@ -1820,7 +1475,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
 
     func applicationWillTerminate(_ notification: Notification) {
         stopCLIEndpointMonitor()
-        ControllerInputManager.shared.stop()
     }
     
     private func isInteractiveView(_ view: NSView?) -> Bool {
@@ -1849,30 +1503,4 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         }
         return true
     }
-}
-
-private func hotKeyEventCallback(eventHandlerCallRef: EventHandlerCallRef?, event: EventRef?, userData: UnsafeMutableRawPointer?) -> OSStatus {
-    guard let userData, let event else { return noErr }
-    var hotKeyID = EventHotKeyID()
-    let status = GetEventParameter(event,
-                                   EventParamName(kEventParamDirectObject),
-                                   EventParamType(typeEventHotKeyID),
-                                   nil,
-                                   MemoryLayout<EventHotKeyID>.size,
-                                   nil,
-                                   &hotKeyID)
-    if status != noErr {
-        return status
-    }
-    let delegate = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
-    delegate.handleHotKeyEvent(signature: hotKeyID.signature, id: hotKeyID.id)
-    return noErr
-}
-
-private func fourCharCode(_ string: String) -> FourCharCode {
-    var result: UInt32 = 0
-    for scalar in string.unicodeScalars.prefix(4) {
-        result = (result << 8) | (scalar.value & 0xFF)
-    }
-    return result
 }

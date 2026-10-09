@@ -33,7 +33,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **컴팩트 / 전체화면 모드** - 각각 별도 설정을 유지할 수 있어요
 - ✅ **키보드 중심 워크플로우** - 빠른 검색, 탐색, 실행 지원
 - ✅ **CLI / TUI 자동화 지원** - 터미널에서 레이아웃을 확인하고 관리 가능
-- ✅ **Hot Corner와 네이티브 제스처 활성화** - 다양한 전역 실행 방식 제공
 - ✅ **앱을 Dock으로 직접 드래그** - Core Animation 엔진에서 사용 가능
 - ✅ **Markdown 릴리즈 노트를 지원하는 업데이트 센터** - 더 풍부한 인앱 업데이트 경험
 - ✅ **백업 / 복원 도구** - 더 안전한 내보내기와 복구 흐름
@@ -127,7 +126,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### 활성화와 입력
 
-- **Hot Corner 지원** - 설정 가능한 화면 모서리에서 MacLaunch 열기
 - **실험적 네이티브 제스처 지원** - 4손가락 pinch / tap 동작
 - **전역 단축키 지원** - 어디서든 MacLaunch 열기
 - **Dock으로 드래그** - Core Animation 엔진에서 macOS Dock에 직접 앱 넘기기
@@ -214,6 +212,5 @@ Apple이 커스텀 런처에서 멀어지는 동안, MacLaunch는 현대 macOS�
 - Perplexity
 - Google
 
-- 실험적 제스처 지원은 [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) 와 [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) 포크를 기반으로 합니다.❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

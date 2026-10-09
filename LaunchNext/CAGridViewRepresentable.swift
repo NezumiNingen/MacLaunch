@@ -53,17 +53,12 @@ struct CAGridViewRepresentable: NSViewRepresentable {
         view.usesLiquidGlassFolders = appStore.folderLiquidGlassEnabled
         view.enableIconPreload = false
         view.scrollSensitivity = appStore.scrollSensitivity
-        view.reverseWheelPagingDirection = appStore.reverseWheelPagingDirection
-        view.trackpadVerticalDirection = appStore.trackpadVerticalDirection
         view.hoverMagnificationEnabled = appStore.enableHoverMagnification
         view.hoverMagnificationScale = CGFloat(appStore.hoverMagnificationScale)
         view.activePressEffectEnabled = appStore.enableActivePressEffect
         view.activePressScale = CGFloat(appStore.activePressScale)
         view.animationsEnabled = appStore.enableAnimations
         view.animationDuration = appStore.animationDuration
-        view.dockDragEnabled = appStore.dockDragEnabled
-        view.dockDragSide = appStore.dockDragSide
-        view.externalAppDragTriggerDistance = CGFloat(appStore.dockDragTriggerDistance)
         let allowsBatchSelection = appStore.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         view.contextMenuConfiguration = makeContextMenuConfiguration(allowsBatchSelection: allowsBatchSelection)
         view.allowsBatchSelectionMode = allowsBatchSelection
@@ -217,8 +212,6 @@ struct CAGridViewRepresentable: NSViewRepresentable {
         nsView.usesLiquidGlassFolders = appStore.folderLiquidGlassEnabled
         nsView.enableIconPreload = false
         nsView.scrollSensitivity = appStore.scrollSensitivity
-        nsView.reverseWheelPagingDirection = appStore.reverseWheelPagingDirection
-        nsView.trackpadVerticalDirection = appStore.trackpadVerticalDirection
         nsView.hoverMagnificationEnabled = appStore.enableHoverMagnification
         nsView.hoverMagnificationScale = CGFloat(appStore.hoverMagnificationScale)
         nsView.activePressEffectEnabled = appStore.enableActivePressEffect
@@ -295,9 +288,6 @@ struct CAGridViewRepresentable: NSViewRepresentable {
             guard let selectedIndex else { return nil }
             return items.indices.contains(selectedIndex) ? selectedIndex : nil
         }()
-        nsView.dockDragEnabled = appStore.dockDragEnabled
-        nsView.dockDragSide = appStore.dockDragSide
-        nsView.externalAppDragTriggerDistance = CGFloat(appStore.dockDragTriggerDistance)
         nsView.updateSelection(safeSelectedIndex, animated: true)
         nsView.updateExternalDragState(sourceIndex: externalDragSourceIndex,
                                        hoverIndex: externalDragHoverIndex)

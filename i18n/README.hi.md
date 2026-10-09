@@ -32,7 +32,6 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **कॉम्पैक्ट और पूर्णस्क्रीन मोड** - अलग-अलग सेटिंग्स के साथ
 - ✅ **कीबोर्ड-केंद्रित वर्कफ़्लो** - तेज़ खोज, नेविगेशन और लॉन्च
 - ✅ **CLI / TUI समर्थन** - टर्मिनल से लेआउट देखें और प्रबंधित करें
-- ✅ **Hot Corner और नेटिव जेस्चर सक्रियण** - MacLaunch खोलने के कई वैश्विक तरीके
 - ✅ **ऐप्स को सीधे Dock में खींचें** - Core Animation इंजन में उपलब्ध
 - ✅ **Markdown रिलीज़ नोट्स वाला अपडेट सेंटर** - अधिक समृद्ध इन-ऐप अपडेट अनुभव
 - ✅ **बैकअप और पुनर्स्थापन टूल** - अधिक सुरक्षित एक्सपोर्ट और रिकवरी
@@ -126,7 +125,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### सक्रियण और इनपुट
 
-- **Hot Corner समर्थन** - कॉन्फ़िगर करने योग्य स्क्रीन कोने से MacLaunch खोलें
 - **प्रायोगिक नेटिव जेस्चर समर्थन** - चार-उंगली pinch / tap क्रियाएँ
 - **ग्लोबल शॉर्टकट समर्थन** - कहीं से भी MacLaunch खोलें
 - **Dock में ड्रैग** - Core Animation इंजन के साथ ऐप्स को सीधे macOS Dock में दें
@@ -213,6 +211,5 @@ A: पहले सेटिंग्स में command line interface सक
 - Perplexity
 - Google
 
-- प्रयोगात्मक gesture समर्थन [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) और [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) के fork पर आधारित है।❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

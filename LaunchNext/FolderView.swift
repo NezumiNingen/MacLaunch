@@ -137,9 +137,6 @@ struct FolderView: View {
         .onChange(of: appStore.folderRenameRequestID) {
             consumeRenameRequestIfNeeded()
         }
-        .onReceive(ControllerInputManager.shared.commands.receive(on: RunLoop.main)) { command in
-            handleControllerCommand(command)
-        }
         .onDisappear {
             if let monitor = keyMonitor {
                 NSEvent.removeMonitor(monitor)
@@ -775,58 +772,6 @@ extension FolderView {
         guard folder.apps.indices.contains(newIndex) else { return }
         selectedIndex = newIndex
         announceSelectedAppIfNeeded()
-    }
-
-    private func handleControllerCommand(_ command: ControllerCommand) {
-        guard presentationState?.allowsInteraction != false else { return }
-        guard appStore.gameControllerEnabled else { return }
-        guard ControllerInputManager.shared.isActive else { return }
-        guard !isEditingName else { return }
-
-        switch command {
-        case .move(let direction), .moveRepeat(let direction):
-            if !isKeyboardNavigationActive {
-                isKeyboardNavigationActive = true
-                setSelectionToStart()
-                clampSelection()
-                announceSelectedAppIfNeeded()
-                return
-            }
-
-            switch direction {
-            case .left:
-                moveSelection(dx: -1, dy: 0)
-            case .right:
-                moveSelection(dx: 1, dy: 0)
-            case .up:
-                moveSelection(dx: 0, dy: -1)
-            case .down:
-                moveSelection(dx: 0, dy: 1)
-            }
-        case .stop(_):
-            break
-        case .select:
-            if !isKeyboardNavigationActive {
-                isKeyboardNavigationActive = true
-                setSelectionToStart()
-                clampSelection()
-                announceSelectedAppIfNeeded()
-                return
-            }
-
-            if let idx = selectedIndex, folder.apps.indices.contains(idx) {
-                let targetApp = folder.apps[idx]
-                if canLaunch(targetApp) {
-                    onLaunchApp(targetApp)
-                } else {
-                    NSSound.beep()
-                }
-            }
-        case .cancel:
-            onClose()
-        case .menu:
-            break
-        }
     }
 
     private func setSelectionToStart() {

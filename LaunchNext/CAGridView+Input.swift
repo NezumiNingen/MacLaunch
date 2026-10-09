@@ -215,7 +215,6 @@ extension CAGridView {
         guard scaledDelta != 0 else { return }
 
         let direction = scaledDelta > 0 ? 1 : -1
-        let effectiveDirection = reverseWheelPagingDirection ? -direction : direction
         if wheelLastDirection != direction {
             wheelAccumulatedDelta = 0
         }
@@ -232,7 +231,7 @@ extension CAGridView {
         }
 
         // Keep existing CA direction semantics by default; optional override flips wheel-only paging.
-        let targetPage = effectiveDirection > 0 ? currentPage - 1 : currentPage + 1
+        let targetPage = direction > 0 ? currentPage - 1 : currentPage + 1
         wheelLastFlipAt = now
         wheelAccumulatedDelta = 0
         navigateToPage(targetPage, animated: true)
@@ -240,7 +239,7 @@ extension CAGridView {
 
     private func preciseVerticalDelta(from deltaY: CGFloat, isPrecise: Bool) -> CGFloat {
         guard isPrecise else { return -deltaY }
-        return trackpadVerticalDirection == .natural ? deltaY : -deltaY
+        return deltaY
     }
 
     func rubberBand(_ offset: CGFloat, limit: CGFloat) -> CGFloat {
@@ -340,11 +339,10 @@ extension CAGridView {
         if isDraggingItem {
             let dragDelta = CGPoint(x: location.x - dragCurrentPoint.x,
                                     y: location.y - dragCurrentPoint.y)
-            if let app = externalDockDragCandidate(),
-               shouldStartExternalDockDrag(localPoint: location,
-                                           windowPoint: event.locationInWindow,
+            if let app = externalAppDragCandidate(),
+               shouldStartExternalAppDrag(windowPoint: event.locationInWindow,
                                            dragDelta: dragDelta) {
-                startExternalDockDrag(for: app, event: event, at: location)
+                startExternalAppDrag(for: app, event: event, at: location)
                 return
             }
             updateDragging(at: location)
@@ -580,7 +578,7 @@ extension CAGridView {
         syncFolderGlass()
     }
 
-    func externalDockDragCandidate() -> AppInfo? {
+    func externalAppDragCandidate() -> AppInfo? {
         guard !isBatchDragging else { return nil }
         guard case .app(let app) = draggingItem else { return nil }
         let path = app.url.path
@@ -590,40 +588,24 @@ extension CAGridView {
         return app
     }
 
-    func shouldStartExternalDockDrag(localPoint point: CGPoint, windowPoint: CGPoint, dragDelta: CGPoint) -> Bool {
+    func shouldStartExternalAppDrag(windowPoint: CGPoint, dragDelta: CGPoint) -> Bool {
         guard let contentView = window?.contentView else { return false }
-        guard dockDragEnabled else { return false }
 
-        switch dockDragSide {
-        case .disabled:
-            return false
-        case .bottom:
-            let movingTowardDock = dragDelta.y < -1.5
-            let nearBottomEdge = windowPoint.y <= contentView.bounds.minY + externalAppDragTriggerDistance
-            let isInsideHorizontalRange =
-                windowPoint.x >= contentView.bounds.minX - externalAppDragOutset &&
-                windowPoint.x <= contentView.bounds.maxX + externalAppDragOutset
-            return movingTowardDock && nearBottomEdge && isInsideHorizontalRange
-
-        case .left:
-            let movingTowardDock = dragDelta.x < -1.5
-            let nearLeftEdge = windowPoint.x <= contentView.bounds.minX + externalAppDragTriggerDistance
-            let isInsideVerticalRange =
-                windowPoint.y >= contentView.bounds.minY - externalAppDragOutset &&
-                windowPoint.y <= contentView.bounds.maxY + externalAppDragOutset
-            return movingTowardDock && nearLeftEdge && isInsideVerticalRange
-
-        case .right:
-            let movingTowardDock = dragDelta.x > 1.5
-            let nearRightEdge = windowPoint.x >= contentView.bounds.maxX - externalAppDragTriggerDistance
-            let isInsideVerticalRange =
-                windowPoint.y >= contentView.bounds.minY - externalAppDragOutset &&
-                windowPoint.y <= contentView.bounds.maxY + externalAppDragOutset
-            return movingTowardDock && nearRightEdge && isInsideVerticalRange
-        }
+        // Hand an app to macOS only when the pointer is leaving the Launchpad
+        // window. The edge band scales with the current display/window size.
+        let edgeBand = max(28, min(72, min(contentView.bounds.width, contentView.bounds.height) * 0.035))
+        let minX = contentView.bounds.minX
+        let maxX = contentView.bounds.maxX
+        let minY = contentView.bounds.minY
+        let maxY = contentView.bounds.maxY
+        let nearLeftEdge = windowPoint.x <= minX + edgeBand && dragDelta.x < -1.5
+        let nearRightEdge = windowPoint.x >= maxX - edgeBand && dragDelta.x > 1.5
+        let nearBottomEdge = windowPoint.y <= minY + edgeBand && dragDelta.y < -1.5
+        let nearTopEdge = windowPoint.y >= maxY - edgeBand && dragDelta.y > 1.5
+        return nearLeftEdge || nearRightEdge || nearBottomEdge || nearTopEdge
     }
 
-    func startExternalDockDrag(for app: AppInfo, event: NSEvent, at point: CGPoint) {
+    func startExternalAppDrag(for app: AppInfo, event: NSEvent, at point: CGPoint) {
         guard !externalAppDragSessionActive else { return }
 
         clearDropTargetHighlight()
@@ -632,7 +614,7 @@ extension CAGridView {
         let writer = app.url as NSURL
         let draggingItem = NSDraggingItem(pasteboardWriter: writer)
 
-        let dragImage = renderedExternalDockDragPreview(for: app)
+        let dragImage = renderedExternalAppDragPreview(for: app)
         let frame = CGRect(x: point.x - iconSize / 2,
                            y: point.y - iconSize / 2,
                            width: iconSize,
@@ -649,7 +631,7 @@ extension CAGridView {
         session.animatesToStartingPositionsOnCancelOrFail = true
     }
 
-    func renderedExternalDockDragPreview(for app: AppInfo) -> NSImage {
+    func renderedExternalAppDragPreview(for app: AppInfo) -> NSImage {
         let icon = IconStore.shared.icon(forPath: app.url.path)
         let scale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
         let renderSize = NSSize(width: iconSize * scale, height: iconSize * scale)

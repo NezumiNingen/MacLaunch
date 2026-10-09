@@ -34,16 +34,11 @@ Building from source? See [Configure local code signing](#configure-local-code-s
 - ✅ **One-click import from old system Launchpad** - directly reads your native Launchpad SQLite database (`/private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db`) to perfectly recreate your existing folders, app positions, and layout
 - ✅ **Classic Launchpad experience** - works exactly like the beloved original interface
 - ✅ **Multi-language support** - full internationalization with English, Simplified Chinese, Traditional Chinese, Japanese, French, Spanish, German, Russian, and more
-- ✅ **Hide icon labels** - clean, minimalist view when you don't need app names
-- ✅ **Custom icon sizes** - adjust icon dimensions to fit your preferences
 - ✅ **Smart folder management** - create and organize folders just like before
 - ✅ **Fuzzy search and keyboard navigation** - find apps quickly, even with partial or imperfect input
 - ✅ **CLI / TUI support** - inspect and operate your layout from the terminal
-- ✅ **Hot Corner and native gesture support** - open MacLaunch with corners, trackpad gestures, and 4 / 5 finger options
-- ✅ **Drag apps directly to the Dock** - available in Next Engine + Core Animation
 - ✅ **Core Animation folders** - folder content supports paged and vertical scroll layouts
 - ✅ **Better context menus** - Show in Finder, Copy App Path, Rename Folder, and configured uninstall actions
-- ✅ **Update tab with Markdown release notes** - richer in-app update experience
 - ✅ **Backup, controller, and voice support improvements** - better reliability and accessibility
 
 ### What We Lost in macOS Tahoe
@@ -139,7 +134,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Search and Folder Experience
 - **Fuzzy Search**: Match apps with partial names, abbreviations, and imperfect input
-- **Configurable Search Delay**: Tune search debounce timing in Settings
 - **Folder Layout Modes**: Choose between Launchpad-like paged folders and vertical scrolling folders
 - **Core Animation Folder Rendering**: Smoother folder interaction for larger folders
 
@@ -155,15 +149,11 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Automation and Activation
 - **CLI / TUI**: Manage MacLaunch from the terminal
-- **Hot Corner**: Open MacLaunch from a configurable screen corner
-- **Experimental native gestures**: 4 / 5 finger pinch and tap actions, including external trackpad device selection
-- **Dock drag**: Drag apps directly into the macOS Dock in Next Engine + Core Animation
 
 ### App Management
 - **Context menu actions**: Show apps in Finder, copy app paths, rename folders, and use a configured uninstall tool
 
 ### Update and Backup Tools
-- **Update tab**: Check for updates and read Markdown release notes inside Settings
 - **Backup tools**: Create and restore backups more safely
 - **Notification update**: Modern notification API support
 
@@ -238,7 +228,6 @@ As Apple moves away from customizable interfaces, MacLaunch represents a push to
 
 
 
-- Experimental gesture support is built on [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) and the fork by [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

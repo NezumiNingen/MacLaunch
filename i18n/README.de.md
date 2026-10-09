@@ -32,11 +32,9 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Kompakt- und Vollbildmodus** - mit Unterstützung für getrennte Einstellungen
 - ✅ **Tastaturorientierter Workflow** - schnelle Suche, Navigation und Starten
 - ✅ **CLI / TUI-Unterstützung** - Layouts direkt im Terminal prüfen und verwalten
-- ✅ **Aktivierung per Hot Corner und nativen Gesten** - mehrere globale Möglichkeiten zum Öffnen von MacLaunch
 - ✅ **Apps direkt ins Dock ziehen** - verfügbar mit der Core-Animation-Engine
 - ✅ **Update-Center mit Markdown-Release-Notes** - reichhaltigere In-App-Update-Erfahrung
 - ✅ **Backup- und Wiederherstellungswerkzeuge** - sicherere Exporte und Wiederherstellung
-- ✅ **Barrierefreiheit und Controller-Unterstützung** - Sprachfeedback und Controller-Navigation verbessert
 - ✅ **Mehrsprachige Unterstützung** - breite Lokalisierungsabdeckung
 
 ## Was macOS Tahoe entfernt hat
@@ -126,7 +124,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Aktivierung und Eingabe
 
-- **Hot-Corner-Unterstützung** - MacLaunch aus einer konfigurierbaren Bildschirmecke öffnen
 - **Experimentelle native Gestenunterstützung** - Vier-Finger-Pinch- / Tap-Aktionen
 - **Globale Tastenkürzel** - MacLaunch von überall öffnen
 - **Dock-Drag** - Apps mit der Core-Animation-Engine direkt an das macOS-Dock übergeben
@@ -152,7 +149,6 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### Barrierefreiheit und Navigation
 
 - **Sprachunterstützung** - Apps und Ordner werden während der Navigation angesagt
-- **Controller-Unterstützung** - MacLaunch und Ordner mit einem Gamecontroller steuern
 - **Tastaturorientierte Interaktion** - schnelle Suche und Navigation ohne Maus
 
 ## Leistung und Stabilität
@@ -213,6 +209,5 @@ Während Apple sich von anpassbaren App-Launchern entfernt, versucht MacLaunch, 
 - Perplexity
 - Google
 
-- Die experimentelle Gestenunterstützung basiert auf [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) und dem Fork von [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 ![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

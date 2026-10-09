@@ -4,8 +4,6 @@ import Combine
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
-import Carbon
-import Carbon.HIToolbox
 import ServiceManagement
 @preconcurrency import UserNotifications
 
@@ -40,7 +38,6 @@ enum AppearancePreference: String, CaseIterable, Identifiable {
         }
     }
 }
-
 
 private struct GitHubRelease: Decodable {
     let tagName: String
@@ -115,20 +112,6 @@ final class AppStore: ObservableObject {
             switch self {
             case .paged: return .folderLayoutPaged
             case .vertical: return .folderLayoutVertical
-            }
-        }
-    }
-
-    enum TrackpadVerticalDirection: String, CaseIterable, Identifiable {
-        case natural
-        case reversed
-
-        var id: String { rawValue }
-
-        var localizationKey: LocalizationKey {
-            switch self {
-            case .natural: return .trackpadVerticalDirectionNatural
-            case .reversed: return .trackpadVerticalDirectionReversed
             }
         }
     }
@@ -226,82 +209,6 @@ final class AppStore: ObservableObject {
         }
     }
 
-    enum DockDragSide: String, CaseIterable, Codable, Identifiable {
-        case disabled
-        case bottom
-        case left
-        case right
-
-        var id: String { rawValue }
-
-        var localizationKey: LocalizationKey {
-            switch self {
-            case .disabled: return .dockDragDisabled
-            case .bottom: return .dockDragSideBottom
-            case .left: return .dockDragSideLeft
-            case .right: return .dockDragSideRight
-            }
-        }
-    }
-
-    enum HotCornerPosition: String, CaseIterable, Codable, Identifiable {
-        case topLeft
-        case topRight
-        case bottomLeft
-        case bottomRight
-
-        var id: String { rawValue }
-
-        var localizationKey: LocalizationKey {
-            switch self {
-            case .topLeft: return .hotCornerPositionTopLeft
-            case .topRight: return .hotCornerPositionTopRight
-            case .bottomLeft: return .hotCornerPositionBottomLeft
-            case .bottomRight: return .hotCornerPositionBottomRight
-            }
-        }
-    }
-
-    // Experimental tap behavior used by the low-level gesture monitor.
-    // If gesture support is removed later, this enum can be deleted together
-    // with the gesture keys and @Published fields below.
-    enum GestureTapAction: String, CaseIterable, Codable, Identifiable {
-        case off
-        case open
-        case toggle
-
-        var id: String { rawValue }
-
-        var localizationKey: LocalizationKey {
-            switch self {
-            case .off: return .gestureTapActionOff
-            case .open: return .gestureTapActionOpen
-            case .toggle: return .gestureTapActionToggle
-            }
-        }
-    }
-
-    enum GestureFingerCount: Int, CaseIterable, Codable, Identifiable {
-        case four = 4
-        case five = 5
-
-        var id: Int { rawValue }
-
-        var localizationKey: LocalizationKey {
-            switch self {
-            case .four: return .gestureFingerCountFour
-            case .five: return .gestureFingerCountFive
-            }
-        }
-
-        var minimumOpenParticipatingFingerCount: Int {
-            switch self {
-            case .four: return 3
-            case .five: return 4
-            }
-        }
-    }
-
     enum DevelopmentBackgroundOverride: String, CaseIterable, Identifiable {
         case none
         case solidWhite
@@ -379,15 +286,10 @@ final class AppStore: ObservableObject {
     static let lockLayoutKey = "lockLayoutEnabled"
     static let rememberPageKey = "rememberLastPage"
     static let rememberedPageIndexKey = "rememberedPageIndex"
-    static let globalHotKeyKey = "globalHotKeyConfiguration"
     static let hoverMagnificationKey = "enableHoverMagnification"
     static let hoverMagnificationScaleKey = "hoverMagnificationScale"
     static let activePressEffectKey = "enableActivePressEffect"
     static let activePressScaleKey = "activePressScale"
-    static let followScrollPagingKey = "followScrollPagingEnabled"
-    static let reverseWheelPagingKey = "reverseWheelPagingDirection"
-    static let reverseWheelVerticalKey = "reverseWheelVerticalDirection"
-    static let trackpadVerticalDirectionKey = "trackpadVerticalDirection"
     static let hideMenuBarKey = "hideMenuBar"
     static let useCAGridRendererKey = "useCAGridRenderer"
     static let folderLayoutModeKey = "folderLayoutMode"
@@ -399,26 +301,7 @@ final class AppStore: ObservableObject {
     static let developmentEnableCLICodeKey = "developmentEnableCLICode"
     static let showQuarantineRemovalActionKey = "showQuarantineRemovalAction"
     static let fuzzySearchEnabledKey = "fuzzySearchEnabled"
-    static let searchDebounceMillisecondsKey = "searchDebounceMilliseconds"
-    static let dockDragEnabledKey = "dockDragEnabled"
-    static let dockDragSideKey = "dockDragSide"
-    static let dockDragTriggerDistanceKey = "dockDragTriggerDistance"
-    static let hotCornerEnabledKey = "hotCornerEnabled"
-    static let hotCornerPositionKey = "hotCornerPosition"
-    static let hotCornerTriggerDelayKey = "hotCornerTriggerDelay"
-    static let hotCornerHitboxSizeKey = "hotCornerHitboxSize"
-    static let hotCornerToggleWhenOpenKey = "hotCornerToggleWhenOpen"
-    // Experimental gesture persistence keys.
-    // Safe to remove together with LaunchNext/Gesture/ and gesture UI wiring
-    // if the private multitouch feature is dropped later.
-    static let gestureEnabledKey = "gestureEnabled"
-    static let gestureCloseOnPinchOutKey = "gestureCloseOnPinchOut"
-    static let gestureTapActionKey = "gestureTapAction"
-    static let gestureFingerCountKey = "gestureFingerCount"
-    static let gestureDeviceSelectionModeKey = "gestureDeviceSelectionMode"
-    static let gestureSelectedDeviceIDsKey = "gestureSelectedDeviceIDs"
-    static let gestureShowAllInputDevicesKey = "gestureShowAllInputDevices"
-    static let searchDebounceMillisecondsRange: ClosedRange<Double> = 100...600
+    private static let searchQueryDebounceMilliseconds: Double = 300
     private static let cliShimMarker = "# MacLaunch CLI shim"
     private static let legacyCLIShimMarker = "# LaunchNext CLI shim"
     private static let cliPathSnippetHeader = "# >>> MacLaunch CLI >>>"
@@ -440,9 +323,17 @@ final class AppStore: ObservableObject {
     static let pageIndicatorPerDisplayEnabledKey = "pageIndicatorPerDisplayEnabled"
     static let pageIndicatorPerDisplayOverridesKey = "pageIndicatorPerDisplayOverrides"
     static let dualModeAppearanceSettingsKey = "dualModeAppearanceSettings"
-    private static let appearanceScaleAdjustmentMigrationKey = "appearanceScaleAdjustedSlightlyV1"
-    private static let gameControllerEnabledKey = "gameControllerEnabled"
-    static let gameControllerMenuToggleKey = "gameControllerMenuToggleLaunchpad"
+    private static let fixedAppearancePreferenceKeys: Set<String> = [
+        backgroundMaskEnabledKey, backgroundMaskLightKey, backgroundMaskDarkKey,
+        folderLiquidGlassKey, folderQuickLaunchEnabledKey, windowOpenAnimationKey, windowAnimationDurationKey,
+        "enableAnimations", "animationDuration", rememberPageKey, gridColumnsKey, gridRowsKey,
+        columnSpacingKey, rowSpacingKey, hoverMagnificationScaleKey, activePressScaleKey,
+        hoverMagnificationKey, activePressEffectKey, "iconScale", "iconLabelFontSize",
+        folderPreviewHighResKey, sidebarIconPresetKey, iconLabelFontWeightKey, "enableDropPrediction",
+        "folderPopoverWidthFactor", "folderPopoverHeightFactor", folderDropZoneScaleKey,
+        "pageIndicatorOffset", pageIndicatorTopPaddingKey,
+        pageIndicatorPerDisplayEnabledKey, pageIndicatorPerDisplayOverridesKey
+    ]
     private static let soundEffectsEnabledKey = "soundEffectsEnabled"
 
     static func loadFolderLiquidGlassEnabled(from defaults: UserDefaults = .standard) -> Bool {
@@ -487,16 +378,7 @@ final class AppStore: ObservableObject {
     private static let voiceFeedbackEnabledKey = "voiceFeedbackEnabled"
     static let folderDropZoneScaleKey = "folderDropZoneScale"
     static let pageIndicatorTopPaddingKey = "pageIndicatorTopPadding"
-    static let onboardingVersionKey = "onboardingVersionShown"
-    static let currentOnboardingVersion = 1
-    static let dockDragTriggerDistanceRange: ClosedRange<Double> = 8...72
-    static let defaultDockDragTriggerDistance: Double = 50
-    static let hotCornerTriggerDelayRange: ClosedRange<Double> = 0...1.2
-    static let hotCornerHitboxSizeRange: ClosedRange<Double> = 20...120
-    static let defaultHotCornerTriggerDelay: Double = 0.25
-    static let defaultHotCornerHitboxSize: Double = 50
     // private static let aiFeatureEnabledKey = "aiFeatureEnabled"
-    // private static let aiOverlayHotKeyKey = "aiOverlayHotKeyConfiguration"
 
     private static func loadHiddenApps() -> Set<String> {
         if let array = UserDefaults.standard.array(forKey: hiddenAppsKey) as? [String] {
@@ -505,8 +387,8 @@ final class AppStore: ObservableObject {
         return []
     }
 
-    private static func loadBackgroundStyle() -> BackgroundStyle {
-        if let raw = UserDefaults.standard.string(forKey: backgroundStyleKey),
+    private static func loadBackgroundStyle(from defaults: UserDefaults = .standard) -> BackgroundStyle {
+        if let raw = defaults.string(forKey: backgroundStyleKey),
            let style = BackgroundStyle(rawValue: raw) {
             return style
         }
@@ -520,7 +402,6 @@ final class AppStore: ObservableObject {
             return mode
         }
         let existingInstall = isExistingInstall ?? (
-            defaults.object(forKey: onboardingVersionKey) != nil ||
             defaults.object(forKey: useCAGridRendererKey) != nil ||
             defaults.object(forKey: "isFullscreenMode") != nil ||
             defaults.object(forKey: gridColumnsKey) != nil
@@ -553,31 +434,56 @@ final class AppStore: ObservableObject {
         }
     }
 
-    private static let minColumnsPerPage = 4
-    private static let maxColumnsPerPage = 10
-    private static let minRowsPerPage = 3
-    private static let maxRowsPerPage = 8
-    private static let minColumnSpacing: Double = 8
-    private static let maxColumnSpacing: Double = 50
-    private static let minRowSpacing: Double = 6
-    private static let maxRowSpacing: Double = 40
-    private static let defaultGridColumnsPerPage = 7
-    private static let defaultGridRowsPerPage = 5
+    private static func enforceFixedAppearancePreferences(in defaults: UserDefaults) {
+        defaults.set(true, forKey: "enableAnimations")
+        defaults.set(true, forKey: rememberPageKey)
+        defaults.set(true, forKey: windowOpenAnimationKey)
+        defaults.set(fixedWindowAnimationDuration, forKey: windowAnimationDurationKey)
+        defaults.set(fixedWindowAnimationDuration, forKey: "animationDuration")
+        defaults.set(defaultIconScale, forKey: "iconScale")
+        defaults.set(true, forKey: folderLiquidGlassKey)
+        defaults.set(true, forKey: folderQuickLaunchEnabledKey)
+        defaults.set(true, forKey: folderPreviewHighResKey)
+        defaults.set(true, forKey: "enableDropPrediction")
+        defaults.set(SidebarIconPreset.large.rawValue, forKey: sidebarIconPresetKey)
+        defaults.set(IconLabelFontWeightOption.medium.rawValue, forKey: iconLabelFontWeightKey)
+        defaults.set(false, forKey: hoverMagnificationKey)
+        defaults.set(false, forKey: activePressEffectKey)
+        defaults.set(defaultFolderPopoverWidth, forKey: "folderPopoverWidthFactor")
+        defaults.set(defaultFolderPopoverHeight, forKey: "folderPopoverHeightFactor")
+        defaults.set(false, forKey: backgroundMaskEnabledKey)
+        defaults.set(defaultColumnSpacing, forKey: columnSpacingKey)
+        defaults.set(defaultRowSpacing, forKey: rowSpacingKey)
+        defaults.set(fixedHoverMagnificationScale, forKey: hoverMagnificationScaleKey)
+        defaults.set(defaultActivePressScale, forKey: activePressScaleKey)
+        defaults.set(fixedGridLabelFontSize, forKey: "iconLabelFontSize")
+        defaults.set(fixedFolderDropZoneScale, forKey: folderDropZoneScaleKey)
+        defaults.set(fixedPageIndicatorOffset, forKey: "pageIndicatorOffset")
+        defaults.set(fixedPageIndicatorTopPadding, forKey: pageIndicatorTopPaddingKey)
+        defaults.set(false, forKey: pageIndicatorPerDisplayEnabledKey)
+        defaults.removeObject(forKey: gridColumnsKey)
+        defaults.removeObject(forKey: gridRowsKey)
+        defaults.removeObject(forKey: backgroundMaskLightKey)
+        defaults.removeObject(forKey: backgroundMaskDarkKey)
+        defaults.removeObject(forKey: pageIndicatorPerDisplayOverridesKey)
+    }
+
     private static let defaultColumnSpacing: Double = 20
     private static let defaultRowSpacing: Double = 14
-    private static let defaultIconScale: Double = 1.0
+    private static let fixedScrollSensitivity: Double = 0.8
+    static let fixedWindowAnimationDuration: Double = 0.25
+    private static let fixedGridLabelFontSize: Double = 11.5
+    private static let fixedFolderDropZoneScale: Double = 1.6
+    private static let fixedPageIndicatorOffset: Double = 27
+    private static let fixedPageIndicatorTopPadding: Double = 12
+    // Change these source constants to alter the fixed appearance policy.
+    private static let classicLaunchpadAlwaysEnabled = true
+    private static let iconLabelsAlwaysVisible = true
+    private static let defaultIconScale: Double = 1.05
     private static let defaultIconLabelFontSize: Double = 11.5
     static let defaultScrollSensitivity: Double = 0.2
-    static var gridColumnRange: ClosedRange<Int> { minColumnsPerPage...maxColumnsPerPage }
-    static var gridRowRange: ClosedRange<Int> { minRowsPerPage...maxRowsPerPage }
-    static var columnSpacingRange: ClosedRange<Double> { minColumnSpacing...maxColumnSpacing }
-    static var rowSpacingRange: ClosedRange<Double> { minRowSpacing...maxRowSpacing }
-    static let hoverMagnificationRange: ClosedRange<Double> = 1.0...1.4
-    private static let defaultHoverMagnificationScale: Double = 1.1
-    static let activePressScaleRange: ClosedRange<Double> = 0.85...1.0
+    private static let fixedHoverMagnificationScale: Double = 1.0
     private static let defaultActivePressScale: Double = 0.92
-    static let folderPopoverWidthRange: ClosedRange<Double> = 0.6...0.95
-    static let folderPopoverHeightRange: ClosedRange<Double> = 0.6...0.95
     private static let defaultFolderPopoverWidth: Double = 0.9
     private static let defaultFolderPopoverHeight: Double = 0.85
     static let folderDropZoneScaleRange: ClosedRange<Double> = 0.6...2.0
@@ -585,9 +491,6 @@ final class AppStore: ObservableObject {
     private static let defaultPageIndicatorOffset: Double = 27.0
     static let pageIndicatorTopPaddingRange: ClosedRange<Double> = 0...60
     static let defaultPageIndicatorTopPadding: Double = 12
-    private static let defaultAnimationDuration: Double = 0.3
-    static let windowAnimationDurationRange: ClosedRange<Double> = 0.1...0.5
-    private static let defaultWindowAnimationDuration: Double = 0.25
     private static let lastUpdateCheckKey = "lastUpdateCheckTimestamp"
     private static let automaticUpdateInterval: TimeInterval = 60 * 60 * 24
     private static let automaticUpdateRetryCount = 3
@@ -625,94 +528,6 @@ final class AppStore: ObservableObject {
         self?.openReleaseURL(url)
     })
 
-    struct HotKeyConfiguration: Equatable {
-        let keyCode: UInt16
-        let modifiersRawValue: NSEvent.ModifierFlags.RawValue
-
-        init(keyCode: UInt16, modifierFlags: NSEvent.ModifierFlags) {
-            self.keyCode = keyCode
-            self.modifiersRawValue = modifierFlags.normalizedShortcutFlags.rawValue
-        }
-
-        init?(dictionary: [String: Any]) {
-            guard let rawKeyCode = dictionary["keyCode"] as? Int,
-                  let rawModifiers = dictionary["modifiers"] as? Int else {
-                return nil
-            }
-            self.keyCode = UInt16(rawKeyCode)
-            self.modifiersRawValue = NSEvent.ModifierFlags.RawValue(rawModifiers)
-        }
-
-        var modifierFlags: NSEvent.ModifierFlags {
-            NSEvent.ModifierFlags(rawValue: modifiersRawValue).normalizedShortcutFlags
-        }
-
-        var dictionaryRepresentation: [String: Any] {
-            ["keyCode": Int(keyCode), "modifiers": Int(modifiersRawValue)]
-        }
-
-        var carbonModifierFlags: UInt32 { modifierFlags.carbonFlags }
-        var keyCodeUInt32: UInt32 { UInt32(keyCode) }
-
-        var displayString: String {
-            let modifierSymbols = modifierFlags.displaySymbols.joined()
-            let keyName = HotKeyConfiguration.keyDisplayName(for: keyCode)
-            return modifierSymbols + keyName
-        }
-
-        private static func keyDisplayName(for keyCode: UInt16) -> String {
-            if let special = Self.specialKeyNames[keyCode] {
-                return special
-            }
-
-            guard let layout = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
-                  let rawPtr = TISGetInputSourceProperty(layout, kTISPropertyUnicodeKeyLayoutData) else {
-                return String(format: "Key %d", keyCode)
-            }
-
-            let data = unsafeBitCast(rawPtr, to: CFData.self) as Data
-            return data.withUnsafeBytes { ptr -> String in
-                guard let layoutPtr = ptr.baseAddress?.assumingMemoryBound(to: UCKeyboardLayout.self) else {
-                    return String(format: "Key %d", keyCode)
-                }
-                var keysDown: UInt32 = 0
-                var chars: [UniChar] = Array(repeating: 0, count: 4)
-                var length: Int = 0
-                let error = UCKeyTranslate(layoutPtr,
-                                           keyCode,
-                                           UInt16(kUCKeyActionDisplay),
-                                           0,
-                                           UInt32(LMGetKbdType()),
-                                           UInt32(kUCKeyTranslateNoDeadKeysBit),
-                                           &keysDown,
-                                           chars.count,
-                                           &length,
-                                           &chars)
-                if error == noErr, length > 0 {
-                    return String(utf16CodeUnits: chars, count: length).uppercased()
-                }
-                return fallbackName(for: keyCode)
-            }
-        }
-
-        private static func fallbackName(for keyCode: UInt16) -> String {
-            Self.specialKeyNames[keyCode] ?? String(format: "Key %d", keyCode)
-        }
-
-        private static let specialKeyNames: [UInt16: String] = [
-            36: "Return",
-            48: "Tab",
-            49: "Space",
-            51: "Delete",
-            53: "Esc",
-            122: "F1", 120: "F2", 99: "F3", 118: "F4", 96: "F5", 97: "F6", 98: "F7", 100: "F8",
-            101: "F9", 109: "F10", 103: "F11", 111: "F12",
-            123: "←",
-            124: "→",
-            125: "↓",
-            126: "↑"
-        ]
-    }
     @Published var apps: [AppInfo] = []
     @Published var folders: [FolderInfo] = []
     let searchEngine = LaunchpadSearchEngine()
@@ -806,11 +621,7 @@ final class AppStore: ObservableObject {
         didSet { WallpaperDiagnostics.isEnabled = wallpaperDiagnosticsEnabled }
     }
 
-    @Published var backgroundMaskEnabled: Bool = AppStore.loadBackgroundMaskEnabled() {
-        didSet {
-            UserDefaults.standard.set(backgroundMaskEnabled, forKey: Self.backgroundMaskEnabledKey)
-        }
-    }
+    @Published private(set) var backgroundMaskEnabled = false
 
     @Published var backgroundMaskLightColor: RGBAColor = AppStore.loadBackgroundMaskColor(forKey: AppStore.backgroundMaskLightKey) {
         didSet {
@@ -824,18 +635,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var sidebarIconPreset: SidebarIconPreset = {
-        if let raw = UserDefaults.standard.string(forKey: AppStore.sidebarIconPresetKey),
-           let preset = SidebarIconPreset(rawValue: raw) {
-            return preset
-        }
-        return .large
-    }() {
-        didSet {
-            guard sidebarIconPreset != oldValue else { return }
-            UserDefaults.standard.set(sidebarIconPreset.rawValue, forKey: Self.sidebarIconPresetKey)
-        }
-    }
+    @Published private(set) var sidebarIconPreset: SidebarIconPreset = .large
 
     // One catalogue supplies both effective export values and the appearance
     // import allowlist. Reading it must not register or persist defaults.
@@ -847,9 +647,6 @@ final class AppStore: ObservableObject {
             Self.backgroundImageSourceKey: backgroundImageSource.rawValue,
             Self.customBackgroundImagePathKey: customBackgroundImagePath,
             Self.backgroundMaskEnabledKey: backgroundMaskEnabled,
-            "scrollSensitivity": scrollSensitivity,
-            "isFullscreenMode": isFullscreenMode,
-            "showLabels": showLabels,
             "hideDock": hideDock,
             Self.hideMenuBarKey: hideMenuBar,
             "enableAnimations": enableAnimations,
@@ -860,9 +657,6 @@ final class AppStore: ObservableObject {
             Self.windowAnimationDurationKey: windowAnimationDuration,
             "useLocalizedThirdPartyTitles": useLocalizedThirdPartyTitles,
             "enableDropPrediction": enableDropPrediction,
-            Self.reverseWheelPagingKey: reverseWheelPagingDirection,
-            Self.reverseWheelVerticalKey: reverseWheelVerticalDirection,
-            Self.trackpadVerticalDirectionKey: trackpadVerticalDirection.rawValue,
             Self.rememberPageKey: rememberLastPage,
             Self.rememberedPageIndexKey: UserDefaults.standard.integer(forKey: Self.rememberedPageIndexKey),
             "iconScale": iconScale,
@@ -871,7 +665,6 @@ final class AppStore: ObservableObject {
             Self.gridColumnsKey: gridColumnsPerPage,
             Self.gridRowsKey: gridRowsPerPage,
             Self.columnSpacingKey: iconColumnSpacing,
-            Self.rowSpacingKey: iconRowSpacing,
             Self.folderDropZoneScaleKey: folderDropZoneScale,
             Self.folderLiquidGlassKey: folderLiquidGlassEnabled,
             Self.folderPreviewHighResKey: enableHighResFolderPreviews,
@@ -880,7 +673,6 @@ final class AppStore: ObservableObject {
             "pageIndicatorOffset": pageIndicatorOffset,
             Self.pageIndicatorTopPaddingKey: pageIndicatorTopPadding,
             Self.pageIndicatorPerDisplayEnabledKey: pageIndicatorPerDisplayEnabled,
-            Self.dockDragEnabledKey: dockDragEnabled,
             "folderPopoverWidthFactor": folderPopoverWidthFactor,
             "folderPopoverHeightFactor": folderPopoverHeightFactor,
             Self.hoverMagnificationKey: enableHoverMagnification,
@@ -888,11 +680,8 @@ final class AppStore: ObservableObject {
             Self.activePressEffectKey: enableActivePressEffect,
             Self.activePressScaleKey: activePressScale,
             "animationDuration": animationDuration,
-            Self.globalHotKeyKey: globalHotKey?.dictionaryRepresentation ?? [:],
             Self.useCAGridRendererKey: useCAGridRenderer,
-            "showFPSOverlay": showFPSOverlay,
-            Self.gameControllerEnabledKey: gameControllerEnabled,
-            Self.gameControllerMenuToggleKey: gameControllerMenuTogglesLaunchpad
+            "showFPSOverlay": showFPSOverlay
         ]
     }
 
@@ -906,7 +695,9 @@ final class AppStore: ObservableObject {
     }
 
     var appearanceBackupPreferenceKeys: Set<String> {
-        Set(appearanceBackupValues.keys).union(encodedAppearanceBackupValues.keys)
+        Set(appearanceBackupValues.keys)
+            .union(encodedAppearanceBackupValues.keys)
+            .subtracting(Self.fixedAppearancePreferenceKeys)
     }
 
     func preferencesForBackup(persisted: [String: Any]) throws -> [String: Any] {
@@ -920,6 +711,13 @@ final class AppStore: ObservableObject {
         result.removeValue(forKey: Self.showQuarantineRemovalActionKey)
         result.removeValue(forKey: WallpaperDiagnostics.enabledKey)
         result.removeValue(forKey: AppUsageHistory.storageKey)
+        // These values are fixed by the app and the locked vertical spacing is local.
+        result.removeValue(forKey: "isFullscreenMode")
+        result.removeValue(forKey: "showLabels")
+        result.removeValue(forKey: Self.rowSpacingKey)
+        for key in Self.fixedAppearancePreferenceKeys {
+            result.removeValue(forKey: key)
+        }
         return result
     }
 
@@ -927,43 +725,35 @@ final class AppStore: ObservableObject {
         defaults.set(SidebarIconPreset.large.rawValue, forKey: Self.sidebarIconPresetKey)
         defaults.set(AppearancePreference.system.rawValue, forKey: "appearancePreference")
         defaults.set(BackgroundStyle.glass.rawValue, forKey: Self.backgroundStyleKey)
-        defaults.set(false, forKey: Self.backgroundImageEnabledKey)
+        defaults.set(true, forKey: Self.backgroundImageEnabledKey)
         defaults.set(BackgroundImageSource.desktopPreview.rawValue, forKey: Self.backgroundImageSourceKey)
         defaults.set("", forKey: Self.customBackgroundImagePathKey)
         defaults.set(false, forKey: Self.backgroundMaskEnabledKey)
         Self.persistBackgroundMaskColor(Self.defaultBackgroundMaskColor, forKey: Self.backgroundMaskLightKey)
         Self.persistBackgroundMaskColor(Self.defaultBackgroundMaskColor, forKey: Self.backgroundMaskDarkKey)
-        defaults.set(true, forKey: "isFullscreenMode")
-        defaults.set(true, forKey: "showLabels")
+        defaults.set(Self.classicLaunchpadAlwaysEnabled, forKey: "isFullscreenMode")
+        defaults.set(Self.iconLabelsAlwaysVisible, forKey: "showLabels")
         defaults.set(true, forKey: Self.folderPreviewHighResKey)
-        defaults.set(false, forKey: Self.folderQuickLaunchEnabledKey)
+        defaults.set(true, forKey: Self.folderQuickLaunchEnabledKey)
         defaults.set(FolderLayoutMode.paged.rawValue, forKey: Self.folderLayoutModeKey)
         defaults.set(false, forKey: "hideDock")
         defaults.set(false, forKey: Self.hideMenuBarKey)
-        defaults.set(0.8, forKey: "scrollSensitivity")
-        defaults.set(Self.defaultGridColumnsPerPage, forKey: Self.gridColumnsKey)
-        defaults.set(Self.defaultGridRowsPerPage, forKey: Self.gridRowsKey)
         defaults.set(Self.defaultColumnSpacing, forKey: Self.columnSpacingKey)
-        defaults.set(Self.defaultRowSpacing, forKey: Self.rowSpacingKey)
         defaults.set(true, forKey: "enableDropPrediction")
         defaults.set(true, forKey: "enableAnimations")
         defaults.set(false, forKey: Self.hoverMagnificationKey)
-        defaults.set(Self.defaultHoverMagnificationScale, forKey: Self.hoverMagnificationScaleKey)
+        defaults.set(Self.fixedHoverMagnificationScale, forKey: Self.hoverMagnificationScaleKey)
         defaults.set(false, forKey: Self.activePressEffectKey)
-        defaults.set(false, forKey: Self.followScrollPagingKey)
-        defaults.set(false, forKey: Self.reverseWheelPagingKey)
-        defaults.set(false, forKey: Self.reverseWheelVerticalKey)
-        defaults.set(TrackpadVerticalDirection.natural.rawValue, forKey: Self.trackpadVerticalDirectionKey)
         defaults.set(Self.defaultActivePressScale, forKey: Self.activePressScaleKey)
         defaults.set(Self.defaultIconScale, forKey: "iconScale")
         defaults.set(Self.defaultIconLabelFontSize, forKey: "iconLabelFontSize")
         defaults.set(IconLabelFontWeightOption.medium.rawValue, forKey: Self.iconLabelFontWeightKey)
-        defaults.set(Self.defaultAnimationDuration, forKey: "animationDuration")
+        defaults.set(Self.fixedWindowAnimationDuration, forKey: "animationDuration")
         defaults.set(true, forKey: Self.windowOpenAnimationKey)
         defaults.set(false, forKey: Self.windowShadowEnabledKey)
         defaults.set(0, forKey: Self.compactWindowMaxWidthKey)
         defaults.set(0, forKey: Self.compactWindowMaxHeightKey)
-        defaults.set(Self.defaultWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
+        defaults.set(Self.fixedWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
         defaults.set(true, forKey: "useLocalizedThirdPartyTitles")
         defaults.set(Self.defaultPageIndicatorOffset, forKey: "pageIndicatorOffset")
         defaults.set(Self.defaultPageIndicatorTopPadding, forKey: Self.pageIndicatorTopPaddingKey)
@@ -977,17 +767,14 @@ final class AppStore: ObservableObject {
         if let data = try? JSONEncoder().encode(Self.defaultDualModeAppearanceSettings) {
             defaults.set(data, forKey: Self.dualModeAppearanceSettingsKey)
         }
+        Self.enforceFixedAppearancePreferences(in: defaults)
     }
 
     private func reloadAppearancePreferencesFromDefaults() {
         let defaults = UserDefaults.standard
+        Self.enforceFixedAppearancePreferences(in: defaults)
 
-        if let raw = defaults.string(forKey: Self.sidebarIconPresetKey),
-           let preset = SidebarIconPreset(rawValue: raw) {
-            sidebarIconPreset = preset
-        } else {
-            sidebarIconPreset = .large
-        }
+        sidebarIconPreset = .large
 
         if let raw = defaults.string(forKey: "appearancePreference"),
            let preference = AppearancePreference(rawValue: raw) {
@@ -996,76 +783,56 @@ final class AppStore: ObservableObject {
             appearancePreference = .system
         }
 
-        launchpadBackgroundStyle = Self.loadBackgroundStyle()
+        launchpadBackgroundStyle = Self.loadBackgroundStyle(from: defaults)
         backgroundImageEnabled = defaults.object(forKey: Self.backgroundImageEnabledKey) as? Bool ?? false
-        if let raw = defaults.string(forKey: Self.backgroundImageSourceKey),
-           let source = BackgroundImageSource(rawValue: raw) {
-            backgroundImageSource = source
-        } else {
-            backgroundImageSource = .desktopPreview
-        }
+        backgroundImageSource = defaults.string(forKey: Self.backgroundImageSourceKey)
+            .flatMap(BackgroundImageSource.init(rawValue:)) ?? .desktopPreview
         customBackgroundImagePath = defaults.string(forKey: Self.customBackgroundImagePathKey) ?? ""
-        backgroundMaskEnabled = Self.loadBackgroundMaskEnabled()
-        backgroundMaskLightColor = Self.loadBackgroundMaskColor(forKey: Self.backgroundMaskLightKey)
-        backgroundMaskDarkColor = Self.loadBackgroundMaskColor(forKey: Self.backgroundMaskDarkKey)
+        backgroundMaskEnabled = false
 
-        isFullscreenMode = defaults.object(forKey: "isFullscreenMode") as? Bool ?? true
-        showLabels = defaults.object(forKey: "showLabels") as? Bool ?? true
-        folderLiquidGlassEnabled = Self.loadFolderLiquidGlassEnabled(from: defaults)
-        enableHighResFolderPreviews = defaults.object(forKey: Self.folderPreviewHighResKey) as? Bool ?? true
-        folderQuickLaunchEnabled = defaults.object(forKey: Self.folderQuickLaunchEnabledKey) as? Bool ?? false
+        defaults.set(Self.classicLaunchpadAlwaysEnabled, forKey: "isFullscreenMode")
+        defaults.set(Self.iconLabelsAlwaysVisible, forKey: "showLabels")
+        folderLiquidGlassEnabled = true
+        enableHighResFolderPreviews = true
+        folderQuickLaunchEnabled = true
         folderLayoutMode = Self.loadFolderLayoutMode(from: defaults, isExistingInstall: nil)
         hideDock = defaults.object(forKey: "hideDock") as? Bool ?? false
         hideMenuBar = defaults.object(forKey: Self.hideMenuBarKey) as? Bool ?? false
-        scrollSensitivity = defaults.object(forKey: "scrollSensitivity") as? Double ?? 0.8
-        gridColumnsPerPage = Self.clampColumns(defaults.object(forKey: Self.gridColumnsKey) as? Int ?? Self.defaultGridColumnsPerPage)
-        gridRowsPerPage = Self.clampRows(defaults.object(forKey: Self.gridRowsKey) as? Int ?? Self.defaultGridRowsPerPage)
-        iconColumnSpacing = Self.clampColumnSpacing(defaults.object(forKey: Self.columnSpacingKey) as? Double ?? Self.defaultColumnSpacing)
-        iconRowSpacing = Self.clampRowSpacing(defaults.object(forKey: Self.rowSpacingKey) as? Double ?? Self.defaultRowSpacing)
-        enableDropPrediction = defaults.object(forKey: "enableDropPrediction") as? Bool ?? true
-        enableAnimations = defaults.object(forKey: "enableAnimations") as? Bool ?? true
-        enableHoverMagnification = defaults.object(forKey: Self.hoverMagnificationKey) as? Bool ?? false
-        hoverMagnificationScale = defaults.object(forKey: Self.hoverMagnificationScaleKey) as? Double ?? Self.defaultHoverMagnificationScale
-        enableActivePressEffect = defaults.object(forKey: Self.activePressEffectKey) as? Bool ?? false
-        followScrollPagingEnabled = defaults.object(forKey: Self.followScrollPagingKey) as? Bool ?? false
-        reverseWheelPagingDirection = defaults.object(forKey: Self.reverseWheelPagingKey) as? Bool ?? false
-        reverseWheelVerticalDirection = defaults.object(forKey: Self.reverseWheelVerticalKey) as? Bool ?? false
-        trackpadVerticalDirection = defaults.string(forKey: Self.trackpadVerticalDirectionKey)
-            .flatMap(TrackpadVerticalDirection.init(rawValue:)) ?? .natural
-        activePressScale = defaults.object(forKey: Self.activePressScaleKey) as? Double ?? Self.defaultActivePressScale
+        iconColumnSpacing = Self.defaultColumnSpacing
+        iconRowSpacing = Self.defaultRowSpacing
+        enableDropPrediction = true
+        enableAnimations = true
+        enableHoverMagnification = false
+        hoverMagnificationScale = Self.fixedHoverMagnificationScale
+        enableActivePressEffect = false
+        activePressScale = Self.defaultActivePressScale
         useLocalizedThirdPartyTitles = defaults.object(forKey: "useLocalizedThirdPartyTitles") as? Bool ?? true
         useCAGridRenderer = defaults.object(forKey: Self.useCAGridRendererKey) as? Bool ?? true
-        iconLabelFontWeight = defaults.string(forKey: Self.iconLabelFontWeightKey).flatMap(IconLabelFontWeightOption.init(rawValue:)) ?? .medium
+        iconLabelFontWeight = .medium
         showFPSOverlay = defaults.object(forKey: "showFPSOverlay") as? Bool ?? false
-        enableWindowOpenAnimation = defaults.object(forKey: Self.windowOpenAnimationKey) as? Bool ?? true
+        enableWindowOpenAnimation = true
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
         compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
         compactWindowMaxHeight = CompactWindowLayout.normalizedMaximumHeight(defaults.integer(forKey: Self.compactWindowMaxHeightKey))
-        windowAnimationDuration = Self.clampWindowAnimationDuration(
-            defaults.object(forKey: Self.windowAnimationDurationKey) as? Double ?? Self.defaultWindowAnimationDuration
-        )
-        rememberLastPage = defaults.object(forKey: Self.rememberPageKey) as? Bool ?? true
-        folderPopoverWidthFactor = Self.clampFolderWidth(defaults.object(forKey: "folderPopoverWidthFactor") as? Double ?? Self.defaultFolderPopoverWidth)
-        folderPopoverHeightFactor = Self.clampFolderHeight(defaults.object(forKey: "folderPopoverHeightFactor") as? Double ?? Self.defaultFolderPopoverHeight)
+        windowAnimationDuration = Self.fixedWindowAnimationDuration
+        rememberLastPage = true
 
         if let storedDualModeAppearance = Self.loadDualModeAppearanceSettings(from: defaults) {
             dualModeAppearanceSettings = storedDualModeAppearance
         } else {
-            let legacy = Self.legacyAppearanceSettings(from: defaults)
+            let legacy = Self.normalizedAppearanceSettings(Self.legacyAppearanceSettings(from: defaults))
             dualModeAppearanceSettings = DualModeAppearanceSettings(fullscreen: legacy, compact: legacy)
             persistDualModeAppearanceSettings()
         }
         syncActiveAppearanceProxies(from: currentAppearanceLayoutMode)
         persistLegacyAppearanceProxyValues()
 
-        iconScale = dualModeAppearanceSettings[currentAppearanceLayoutMode].iconScale
         iconLabelFontSize = dualModeAppearanceSettings[currentAppearanceLayoutMode].iconLabelFontSize
         pageIndicatorOffset = dualModeAppearanceSettings[currentAppearanceLayoutMode].pageIndicatorOffset
         pageIndicatorTopPadding = dualModeAppearanceSettings[currentAppearanceLayoutMode].pageIndicatorTopPadding
         pageIndicatorPerDisplayEnabled = dualModeAppearanceSettings[currentAppearanceLayoutMode].pageIndicatorPerDisplayEnabled
         pageIndicatorOverrides = dualModeAppearanceSettings[currentAppearanceLayoutMode].pageIndicatorOverrides
         folderDropZoneScale = dualModeAppearanceSettings[currentAppearanceLayoutMode].folderDropZoneScale
-        animationDuration = defaults.object(forKey: "animationDuration") as? Double ?? Self.defaultAnimationDuration
     }
 
     // Reload selected preferences from UserDefaults after an import
@@ -1083,18 +850,6 @@ final class AppStore: ObservableObject {
         showQuarantineRemovalAction = UserDefaults.standard.object(forKey: Self.showQuarantineRemovalActionKey) as? Bool ?? false
         wallpaperDiagnosticsEnabled = UserDefaults.standard.bool(forKey: WallpaperDiagnostics.enabledKey)
         fuzzySearchEnabled = UserDefaults.standard.object(forKey: Self.fuzzySearchEnabledKey) as? Bool ?? true
-        searchDebounceMilliseconds = Self.clampedSearchDebounceMilliseconds(
-            UserDefaults.standard.object(forKey: Self.searchDebounceMillisecondsKey) as? Double ?? 300
-        )
-
-        globalHotKey = Self.loadHotKeyConfiguration()
-        gestureEnabled = UserDefaults.standard.object(forKey: Self.gestureEnabledKey) as? Bool ?? false
-        gestureCloseOnPinchOut = UserDefaults.standard.object(forKey: Self.gestureCloseOnPinchOutKey) as? Bool ?? false
-        gestureTapAction = GestureTapAction(rawValue: UserDefaults.standard.string(forKey: Self.gestureTapActionKey) ?? "") ?? .off
-        gestureFingerCount = GestureFingerCount(rawValue: UserDefaults.standard.integer(forKey: Self.gestureFingerCountKey)) ?? .four
-        gestureDeviceSelectionMode = GestureDeviceSelectionMode(rawValue: UserDefaults.standard.string(forKey: Self.gestureDeviceSelectionModeKey) ?? "") ?? .automatic
-        gestureSelectedDeviceIDs = Array(Set(UserDefaults.standard.stringArray(forKey: Self.gestureSelectedDeviceIDsKey) ?? [])).sorted()
-        gestureShowAllInputDevices = UserDefaults.standard.object(forKey: Self.gestureShowAllInputDevicesKey) as? Bool ?? false
 
         // Apply hidden filtering immediately
         pruneHiddenAppsFromAppList()
@@ -1103,36 +858,10 @@ final class AppStore: ObservableObject {
         removeEmptyPages()
         triggerFolderUpdate()
         triggerGridRefresh()
-        refreshGestureDeviceInventory()
-    }
-
-    func refreshGestureDeviceInventory() {
-        let provider = GestureTouchProvider()
-        provider.refreshDevices()
-        provider.configureDevices(mode: gestureDeviceSelectionMode, selectedDeviceIDs: gestureSelectedDeviceIDs)
-        availableGestureDevices = provider.availableDevices.sorted {
-            if $0.isBuiltIn != $1.isBuiltIn {
-                return $0.isBuiltIn && !$1.isBuiltIn
-            }
-            if $0.isRecommended != $1.isRecommended {
-                return $0.isRecommended && !$1.isRecommended
-            }
-            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
-
-    var visibleGestureDevices: [GestureInputDevice] {
-        gestureShowAllInputDevices ? availableGestureDevices : availableGestureDevices.filter(\.isRecommended)
-    }
-
-    var gestureUnavailableSelectionCount: Int {
-        let availableIDs = Set(availableGestureDevices.map(\.id))
-        return gestureSelectedDeviceIDs.filter { !availableIDs.contains($0) }.count
     }
 
     @Published var isSetting = false
     @Published var isInitialLoading = true
-    @Published var shouldShowOnboarding: Bool = false
     @Published var currentPage = 0 {
         didSet {
             if currentPage < 0 { currentPage = 0; return }
@@ -1156,24 +885,6 @@ final class AppStore: ObservableObject {
         didSet {
             guard fuzzySearchEnabled != oldValue else { return }
             UserDefaults.standard.set(fuzzySearchEnabled, forKey: Self.fuzzySearchEnabledKey)
-        }
-    }
-    @Published var searchDebounceMilliseconds: Double = {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: AppStore.searchDebounceMillisecondsKey) == nil { return 300 }
-        return AppStore.clampedSearchDebounceMilliseconds(
-            defaults.object(forKey: AppStore.searchDebounceMillisecondsKey) as? Double ?? 300
-        )
-    }() {
-        didSet {
-            let clamped = Self.clampedSearchDebounceMilliseconds(searchDebounceMilliseconds)
-            if searchDebounceMilliseconds != clamped {
-                searchDebounceMilliseconds = clamped
-                return
-            }
-            guard searchDebounceMilliseconds != oldValue else { return }
-            UserDefaults.standard.set(searchDebounceMilliseconds, forKey: Self.searchDebounceMillisecondsKey)
-            scheduleSearchQueryUpdate(with: searchText)
         }
     }
     @Published var isStartOnLogin: Bool = {
@@ -1211,47 +922,8 @@ final class AppStore: ObservableObject {
         if #available(macOS 13.0, *) { return true }
         return false
     }
-    @Published var isFullscreenMode: Bool = false {
-        didSet {
-            UserDefaults.standard.set(isFullscreenMode, forKey: "isFullscreenMode")
-            syncActiveAppearanceProxies(from: currentAppearanceLayoutMode)
-            persistLegacyAppearanceProxyValues()
-            DispatchQueue.main.async { [weak self] in
-                if let appDelegate = AppDelegate.shared {
-                    appDelegate.updateWindowMode(isFullscreen: self?.isFullscreenMode ?? false)
-                }
-            }
-            
-            DispatchQueue.main.async { [weak self] in
-                self?.clearIconCachesForLayoutChange()
-                self?.triggerGridRefresh()
-            }
-        }
-    }
-    private static func clampColumns(_ value: Int) -> Int {
-        min(max(value, minColumnsPerPage), maxColumnsPerPage)
-    }
-
-    private static func clampRows(_ value: Int) -> Int {
-        min(max(value, minRowsPerPage), maxRowsPerPage)
-    }
-
-    private static func clampColumnSpacing(_ value: Double) -> Double {
-        min(max(value, minColumnSpacing), maxColumnSpacing)
-    }
-
-    private static func clampRowSpacing(_ value: Double) -> Double {
-        min(max(value, minRowSpacing), maxRowSpacing)
-    }
-
-    private static func clampFolderWidth(_ value: Double) -> Double {
-        min(max(value, folderPopoverWidthRange.lowerBound), folderPopoverWidthRange.upperBound)
-    }
-
-    private static func clampFolderHeight(_ value: Double) -> Double {
-        min(max(value, folderPopoverHeightRange.lowerBound), folderPopoverHeightRange.upperBound)
-    }
-
+    // Fixed in code: the app always uses the original full-screen Launchpad presentation.
+    @Published private(set) var isFullscreenMode = AppStore.classicLaunchpadAlwaysEnabled
     private static func clampFolderDropZoneScale(_ value: Double) -> Double {
         min(max(value, folderDropZoneScaleRange.lowerBound), folderDropZoneScaleRange.upperBound)
     }
@@ -1261,19 +933,7 @@ final class AppStore: ObservableObject {
     }
 
     private static func clampWindowAnimationDuration(_ value: Double) -> Double {
-        min(max(value, windowAnimationDurationRange.lowerBound), windowAnimationDurationRange.upperBound)
-    }
-
-    private static func clampDockDragTriggerDistance(_ value: Double) -> Double {
-        min(max(value, dockDragTriggerDistanceRange.lowerBound), dockDragTriggerDistanceRange.upperBound)
-    }
-
-    private static func clampHotCornerTriggerDelay(_ value: Double) -> Double {
-        min(max(value, hotCornerTriggerDelayRange.lowerBound), hotCornerTriggerDelayRange.upperBound)
-    }
-
-    private static func clampHotCornerHitboxSize(_ value: Double) -> Double {
-        min(max(value, hotCornerHitboxSizeRange.lowerBound), hotCornerHitboxSizeRange.upperBound)
+        fixedWindowAnimationDuration
     }
 
     private var appearanceRefreshWorkItem: DispatchWorkItem?
@@ -1304,7 +964,6 @@ final class AppStore: ObservableObject {
     }
 
     private static func legacyAppearanceSettings(from defaults: UserDefaults) -> ModeScopedAppearanceSettings {
-        let iconScale = defaults.object(forKey: "iconScale") as? Double ?? Self.defaultIconScale
         let iconLabelFontSize = defaults.object(forKey: "iconLabelFontSize") as? Double ?? Self.defaultIconLabelFontSize
         let dropZoneScale = clampFolderDropZoneScale(defaults.object(forKey: Self.folderDropZoneScaleKey) as? Double ?? Self.defaultFolderDropZoneScale)
         let indicatorOffset = defaults.object(forKey: "pageIndicatorOffset") as? Double ?? Self.defaultPageIndicatorOffset
@@ -1312,7 +971,7 @@ final class AppStore: ObservableObject {
         let perDisplayEnabled = defaults.object(forKey: Self.pageIndicatorPerDisplayEnabledKey) as? Bool ?? false
         let overrides = (try? JSONDecoder().decode([String: PageIndicatorOverride].self,
                                                    from: defaults.data(forKey: Self.pageIndicatorPerDisplayOverridesKey) ?? Data())) ?? [:]
-        return ModeScopedAppearanceSettings(iconScale: iconScale,
+        return ModeScopedAppearanceSettings(iconScale: defaultIconScale,
                                             iconLabelFontSize: iconLabelFontSize,
                                             folderDropZoneScale: dropZoneScale,
                                             pageIndicatorOffset: indicatorOffset,
@@ -1322,13 +981,13 @@ final class AppStore: ObservableObject {
     }
 
     private static func normalizedAppearanceSettings(_ settings: ModeScopedAppearanceSettings) -> ModeScopedAppearanceSettings {
-        ModeScopedAppearanceSettings(iconScale: settings.iconScale,
-                                     iconLabelFontSize: settings.iconLabelFontSize,
-                                     folderDropZoneScale: clampFolderDropZoneScale(settings.folderDropZoneScale),
-                                     pageIndicatorOffset: settings.pageIndicatorOffset,
-                                     pageIndicatorTopPadding: clampPageIndicatorTopPadding(settings.pageIndicatorTopPadding),
-                                     pageIndicatorPerDisplayEnabled: settings.pageIndicatorPerDisplayEnabled,
-                                     pageIndicatorOverrides: settings.pageIndicatorOverrides)
+        ModeScopedAppearanceSettings(iconScale: defaultIconScale,
+                                     iconLabelFontSize: fixedGridLabelFontSize,
+                                     folderDropZoneScale: fixedFolderDropZoneScale,
+                                     pageIndicatorOffset: fixedPageIndicatorOffset,
+                                     pageIndicatorTopPadding: fixedPageIndicatorTopPadding,
+                                     pageIndicatorPerDisplayEnabled: false,
+                                     pageIndicatorOverrides: [:])
     }
 
     private static func normalizedDualModeAppearanceSettings(_ settings: DualModeAppearanceSettings) -> DualModeAppearanceSettings {
@@ -1342,23 +1001,6 @@ final class AppStore: ObservableObject {
             return nil
         }
         return normalizedDualModeAppearanceSettings(decoded)
-    }
-
-    private static func adjustExistingAppearanceScaleIfNeeded(
-        _ settings: inout DualModeAppearanceSettings,
-        defaults: UserDefaults,
-        isExistingInstall: Bool
-    ) {
-        guard !defaults.bool(forKey: appearanceScaleAdjustmentMigrationKey) else { return }
-        if isExistingInstall {
-            for mode in AppearanceLayoutMode.allCases {
-                var scoped = settings[mode]
-                scoped.iconScale = min((scoped.iconScale * 1.05 * 100).rounded() / 100, 1.1)
-                scoped.iconLabelFontSize = min((scoped.iconLabelFontSize * 1.05 * 2).rounded() / 2, 16)
-                settings[mode] = scoped
-            }
-        }
-        defaults.set(true, forKey: appearanceScaleAdjustmentMigrationKey)
     }
 
     private func persistDualModeAppearanceSettings() {
@@ -1404,7 +1046,6 @@ final class AppStore: ObservableObject {
         let settings = dualModeAppearanceSettings[mode]
         isApplyingScopedAppearanceState = true
         defer { isApplyingScopedAppearanceState = false }
-        iconScale = settings.iconScale
         iconLabelFontSize = settings.iconLabelFontSize
         folderDropZoneScale = settings.folderDropZoneScale
         pageIndicatorOffset = settings.pageIndicatorOffset
@@ -1426,14 +1067,6 @@ final class AppStore: ObservableObject {
 
     func scopedIconScale(for mode: AppearanceLayoutMode) -> Double {
         dualModeAppearanceSettings[mode].iconScale
-    }
-
-    func setScopedIconScale(_ value: Double, for mode: AppearanceLayoutMode) {
-        if mode == currentAppearanceLayoutMode {
-            iconScale = value
-        } else {
-            updateScopedAppearanceSettings(for: mode) { $0.iconScale = value }
-        }
     }
 
     func scopedIconLabelFontSize(for mode: AppearanceLayoutMode) -> Double {
@@ -1528,36 +1161,19 @@ final class AppStore: ObservableObject {
     }
 
     // 图标标题显示
-    @Published var showLabels: Bool = {
-        if UserDefaults.standard.object(forKey: "showLabels") == nil { return true }
-        return UserDefaults.standard.bool(forKey: "showLabels")
-    }() {
-        didSet { UserDefaults.standard.set(showLabels, forKey: "showLabels") }
-    }
+    // Fixed in code: application names are always visible.
+    @Published private(set) var showLabels = AppStore.iconLabelsAlwaysVisible
 
-    @Published var folderLiquidGlassEnabled = true {
+    @Published private(set) var folderLiquidGlassEnabled = true {
         didSet {
             guard folderLiquidGlassEnabled != oldValue else { return }
             UserDefaults.standard.set(folderLiquidGlassEnabled, forKey: Self.folderLiquidGlassKey)
         }
     }
 
-    @Published var enableHighResFolderPreviews: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.folderPreviewHighResKey) == nil { return true }
-        return UserDefaults.standard.bool(forKey: AppStore.folderPreviewHighResKey)
-    }() {
-        didSet {
-            guard enableHighResFolderPreviews != oldValue else { return }
-            UserDefaults.standard.set(enableHighResFolderPreviews, forKey: AppStore.folderPreviewHighResKey)
-            clearIconCachesForLayoutChange()
-            triggerFolderUpdate()
-            triggerGridRefresh()
-        }
-    }
+    @Published private(set) var enableHighResFolderPreviews = true
 
-    @Published var folderQuickLaunchEnabled: Bool = {
-        UserDefaults.standard.object(forKey: AppStore.folderQuickLaunchEnabledKey) as? Bool ?? false
-    }() {
+    @Published private(set) var folderQuickLaunchEnabled = true {
         didSet {
             guard folderQuickLaunchEnabled != oldValue else { return }
             UserDefaults.standard.set(folderQuickLaunchEnabled, forKey: AppStore.folderQuickLaunchEnabledKey)
@@ -1594,72 +1210,18 @@ final class AppStore: ObservableObject {
         }
     }
     
-    @Published var scrollSensitivity: Double {
-        didSet {
-            UserDefaults.standard.set(scrollSensitivity, forKey: "scrollSensitivity")
-        }
-    }
+    @Published private(set) var gridColumnsPerPage = AdaptiveLaunchpadGridMetrics.calculate(
+        for: NSScreen.main?.frame.size ?? CGSize(width: 1280, height: 800)
+    ).columns
+    @Published private(set) var gridRowsPerPage = AdaptiveLaunchpadGridMetrics.calculate(
+        for: NSScreen.main?.frame.size ?? CGSize(width: 1280, height: 800)
+    ).rows
+    @Published private(set) var iconColumnSpacing = 20.0
+    @Published private(set) var iconRowSpacing = 14.0
 
-    @Published var gridColumnsPerPage: Int {
-        didSet {
-            let clamped = Self.clampColumns(gridColumnsPerPage)
-            if gridColumnsPerPage != clamped {
-                gridColumnsPerPage = clamped
-                return
-            }
-            guard gridColumnsPerPage != oldValue else { return }
-            UserDefaults.standard.set(gridColumnsPerPage, forKey: Self.gridColumnsKey)
-            handleGridConfigurationChange()
-        }
-    }
+    @Published private(set) var enableDropPrediction = true
 
-    @Published var gridRowsPerPage: Int {
-        didSet {
-            let clamped = Self.clampRows(gridRowsPerPage)
-            if gridRowsPerPage != clamped {
-                gridRowsPerPage = clamped
-                return
-            }
-            guard gridRowsPerPage != oldValue else { return }
-            UserDefaults.standard.set(gridRowsPerPage, forKey: Self.gridRowsKey)
-            handleGridConfigurationChange()
-        }
-    }
-
-    @Published var iconColumnSpacing: Double {
-        didSet {
-            let clamped = Self.clampColumnSpacing(iconColumnSpacing)
-            if iconColumnSpacing != clamped {
-                iconColumnSpacing = clamped
-                return
-            }
-            guard iconColumnSpacing != oldValue else { return }
-            UserDefaults.standard.set(iconColumnSpacing, forKey: Self.columnSpacingKey)
-            triggerGridRefresh()
-        }
-    }
-
-    @Published var iconRowSpacing: Double {
-        didSet {
-            let clamped = Self.clampRowSpacing(iconRowSpacing)
-            if iconRowSpacing != clamped {
-                iconRowSpacing = clamped
-                return
-            }
-            guard iconRowSpacing != oldValue else { return }
-            UserDefaults.standard.set(iconRowSpacing, forKey: Self.rowSpacingKey)
-            triggerGridRefresh()
-        }
-    }
-
-    @Published var enableDropPrediction: Bool = {
-        if UserDefaults.standard.object(forKey: "enableDropPrediction") == nil { return true }
-        return UserDefaults.standard.bool(forKey: "enableDropPrediction")
-    }() {
-        didSet { UserDefaults.standard.set(enableDropPrediction, forKey: "enableDropPrediction") }
-    }
-
-    @Published var folderDropZoneScale: Double = AppStore.defaultFolderDropZoneScale {
+    @Published private(set) var folderDropZoneScale: Double = AppStore.fixedFolderDropZoneScale {
         didSet {
             let clamped = Self.clampFolderDropZoneScale(folderDropZoneScale)
             if folderDropZoneScale != clamped {
@@ -1672,7 +1234,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var pageIndicatorTopPadding: Double = AppStore.defaultPageIndicatorTopPadding {
+    @Published private(set) var pageIndicatorTopPadding: Double = AppStore.fixedPageIndicatorTopPadding {
         didSet {
             let clamped = Self.clampPageIndicatorTopPadding(pageIndicatorTopPadding)
             if pageIndicatorTopPadding != clamped {
@@ -1685,74 +1247,17 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var enableAnimations: Bool = {
-        if UserDefaults.standard.object(forKey: "enableAnimations") == nil { return true }
-        return UserDefaults.standard.bool(forKey: "enableAnimations")
-    }() {
+    @Published private(set) var enableAnimations = true {
         didSet { UserDefaults.standard.set(enableAnimations, forKey: "enableAnimations") }
     }
 
-    @Published var enableHoverMagnification: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.hoverMagnificationKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.hoverMagnificationKey)
-    }() {
-        didSet { UserDefaults.standard.set(enableHoverMagnification, forKey: Self.hoverMagnificationKey) }
-    }
+    @Published private(set) var enableHoverMagnification = false
 
-    @Published var hoverMagnificationScale: Double = {
-        let defaults = UserDefaults.standard
-        let stored = defaults.object(forKey: AppStore.hoverMagnificationScaleKey) as? Double
-        let initial = stored ?? AppStore.defaultHoverMagnificationScale
-        let clamped = min(max(initial, AppStore.hoverMagnificationRange.lowerBound), AppStore.hoverMagnificationRange.upperBound)
-        if stored == nil || stored != clamped {
-            defaults.set(clamped, forKey: AppStore.hoverMagnificationScaleKey)
-        }
-        return clamped
-    }() {
-        didSet {
-            let clamped = min(max(hoverMagnificationScale, Self.hoverMagnificationRange.lowerBound), Self.hoverMagnificationRange.upperBound)
-            if hoverMagnificationScale != clamped {
-                hoverMagnificationScale = clamped
-                return
-            }
-            UserDefaults.standard.set(hoverMagnificationScale, forKey: Self.hoverMagnificationScaleKey)
-        }
-    }
+    @Published private(set) var hoverMagnificationScale = AppStore.fixedHoverMagnificationScale
 
-    @Published var enableActivePressEffect: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.activePressEffectKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.activePressEffectKey)
-    }() {
-        didSet { UserDefaults.standard.set(enableActivePressEffect, forKey: Self.activePressEffectKey) }
-    }
+    @Published private(set) var enableActivePressEffect = false
 
-    @Published var followScrollPagingEnabled: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.followScrollPagingKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.followScrollPagingKey)
-    }() {
-        didSet { UserDefaults.standard.set(followScrollPagingEnabled, forKey: Self.followScrollPagingKey) }
-    }
-
-    @Published var reverseWheelPagingDirection: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.reverseWheelPagingKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.reverseWheelPagingKey)
-    }() {
-        didSet { UserDefaults.standard.set(reverseWheelPagingDirection, forKey: Self.reverseWheelPagingKey) }
-    }
-
-    @Published var reverseWheelVerticalDirection: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.reverseWheelVerticalKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.reverseWheelVerticalKey)
-    }() {
-        didSet { UserDefaults.standard.set(reverseWheelVerticalDirection, forKey: Self.reverseWheelVerticalKey) }
-    }
-
-    @Published var trackpadVerticalDirection: TrackpadVerticalDirection = {
-        let raw = UserDefaults.standard.string(forKey: AppStore.trackpadVerticalDirectionKey)
-        return raw.flatMap(TrackpadVerticalDirection.init(rawValue:)) ?? .natural
-    }() {
-        didSet { UserDefaults.standard.set(trackpadVerticalDirection.rawValue, forKey: Self.trackpadVerticalDirectionKey) }
-    }
+    var scrollSensitivity: Double { Self.fixedScrollSensitivity }
 
     @Published var useCAGridRenderer: Bool = {
         if UserDefaults.standard.object(forKey: AppStore.useCAGridRendererKey) == nil { return true }
@@ -1768,27 +1273,9 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var activePressScale: Double = {
-        let defaults = UserDefaults.standard
-        let stored = defaults.object(forKey: AppStore.activePressScaleKey) as? Double
-        let initial = stored ?? AppStore.defaultActivePressScale
-        let clamped = min(max(initial, AppStore.activePressScaleRange.lowerBound), AppStore.activePressScaleRange.upperBound)
-        if stored == nil || stored != clamped {
-            defaults.set(clamped, forKey: AppStore.activePressScaleKey)
-        }
-        return clamped
-    }() {
-        didSet {
-            let clamped = min(max(activePressScale, Self.activePressScaleRange.lowerBound), Self.activePressScaleRange.upperBound)
-            if activePressScale != clamped {
-                activePressScale = clamped
-                return
-            }
-            UserDefaults.standard.set(activePressScale, forKey: Self.activePressScaleKey)
-        }
-    }
+    @Published private(set) var activePressScale = AppStore.defaultActivePressScale
 
-    @Published var iconLabelFontSize: Double = {
+    @Published private(set) var iconLabelFontSize: Double = {
         let stored = UserDefaults.standard.double(forKey: "iconLabelFontSize")
         return stored == 0 ? 11.5 : stored
     }() {
@@ -1800,20 +1287,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var iconLabelFontWeight: IconLabelFontWeightOption = {
-        let defaults = UserDefaults.standard
-        if let raw = defaults.string(forKey: AppStore.iconLabelFontWeightKey),
-           let value = IconLabelFontWeightOption(rawValue: raw) {
-            return value
-        }
-        return .medium
-    }() {
-        didSet {
-            guard iconLabelFontWeight != oldValue else { return }
-            UserDefaults.standard.set(iconLabelFontWeight.rawValue, forKey: AppStore.iconLabelFontWeightKey)
-            triggerGridRefresh()
-        }
-    }
+    @Published private(set) var iconLabelFontWeight: IconLabelFontWeightOption = .medium
 
     var iconLabelFontWeightValue: Font.Weight {
         iconLabelFontWeight.fontWeight
@@ -1879,17 +1353,9 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var animationDuration: Double = {
-        let stored = UserDefaults.standard.double(forKey: "animationDuration")
-        return stored == 0 ? 0.3 : stored
-    }() {
-        didSet { UserDefaults.standard.set(animationDuration, forKey: "animationDuration") }
-    }
+    var animationDuration: Double { Self.fixedWindowAnimationDuration }
 
-    @Published var enableWindowOpenAnimation: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.windowOpenAnimationKey) == nil { return true }
-        return UserDefaults.standard.bool(forKey: AppStore.windowOpenAnimationKey)
-    }() {
+    @Published private(set) var enableWindowOpenAnimation = true {
         didSet { UserDefaults.standard.set(enableWindowOpenAnimation, forKey: Self.windowOpenAnimationKey) }
     }
 
@@ -1934,11 +1400,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var windowAnimationDuration: Double = {
-        let stored = UserDefaults.standard.object(forKey: AppStore.windowAnimationDurationKey) as? Double
-            ?? AppStore.defaultWindowAnimationDuration
-        return AppStore.clampWindowAnimationDuration(stored)
-    }() {
+    @Published private(set) var windowAnimationDuration = AppStore.fixedWindowAnimationDuration {
         didSet {
             let clamped = Self.clampWindowAnimationDuration(windowAnimationDuration)
             if windowAnimationDuration != clamped {
@@ -1976,26 +1438,6 @@ final class AppStore: ObservableObject {
             if performanceMode == .full, useCAGridRenderer {
                 useCAGridRenderer = false
             }
-        }
-    }
-
-    @Published var gameControllerEnabled: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.gameControllerEnabledKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.gameControllerEnabledKey)
-    }() {
-        didSet {
-            guard oldValue != gameControllerEnabled else { return }
-            UserDefaults.standard.set(gameControllerEnabled, forKey: AppStore.gameControllerEnabledKey)
-        }
-    }
-
-    @Published var gameControllerMenuTogglesLaunchpad: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.gameControllerMenuToggleKey) == nil { return true }
-        return UserDefaults.standard.bool(forKey: AppStore.gameControllerMenuToggleKey)
-    }() {
-        didSet {
-            guard oldValue != gameControllerMenuTogglesLaunchpad else { return }
-            UserDefaults.standard.set(gameControllerMenuTogglesLaunchpad, forKey: AppStore.gameControllerMenuToggleKey)
         }
     }
 
@@ -2049,10 +1491,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var pageIndicatorOffset: Double = {
-        if UserDefaults.standard.object(forKey: "pageIndicatorOffset") == nil { return 27.0 }
-        return UserDefaults.standard.double(forKey: "pageIndicatorOffset")
-    }() {
+    @Published private(set) var pageIndicatorOffset = AppStore.fixedPageIndicatorOffset {
         didSet {
             UserDefaults.standard.set(pageIndicatorOffset, forKey: "pageIndicatorOffset")
             guard !isApplyingScopedAppearanceState else { return }
@@ -2060,10 +1499,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var pageIndicatorPerDisplayEnabled: Bool = {
-        if UserDefaults.standard.object(forKey: AppStore.pageIndicatorPerDisplayEnabledKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: AppStore.pageIndicatorPerDisplayEnabledKey)
-    }() {
+    @Published private(set) var pageIndicatorPerDisplayEnabled = false {
         didSet {
             UserDefaults.standard.set(pageIndicatorPerDisplayEnabled, forKey: AppStore.pageIndicatorPerDisplayEnabledKey)
             guard !isApplyingScopedAppearanceState else { return }
@@ -2079,7 +1515,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var rememberLastPage: Bool = AppStore.defaultRememberSetting() {
+    @Published private(set) var rememberLastPage = true {
         didSet {
             UserDefaults.standard.set(rememberLastPage, forKey: Self.rememberPageKey)
             if rememberLastPage {
@@ -2090,35 +1526,8 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var folderPopoverWidthFactor: Double = {
-        let stored = UserDefaults.standard.double(forKey: "folderPopoverWidthFactor")
-        if stored == 0 { return defaultFolderPopoverWidth }
-        return clampFolderWidth(stored)
-    }() {
-        didSet {
-            let clamped = AppStore.clampFolderWidth(folderPopoverWidthFactor)
-            if folderPopoverWidthFactor != clamped {
-                folderPopoverWidthFactor = clamped
-                return
-            }
-            UserDefaults.standard.set(folderPopoverWidthFactor, forKey: "folderPopoverWidthFactor")
-        }
-    }
-
-    @Published var folderPopoverHeightFactor: Double = {
-        let stored = UserDefaults.standard.double(forKey: "folderPopoverHeightFactor")
-        if stored == 0 { return defaultFolderPopoverHeight }
-        return clampFolderHeight(stored)
-    }() {
-        didSet {
-            let clamped = AppStore.clampFolderHeight(folderPopoverHeightFactor)
-            if folderPopoverHeightFactor != clamped {
-                folderPopoverHeightFactor = clamped
-                return
-            }
-            UserDefaults.standard.set(folderPopoverHeightFactor, forKey: "folderPopoverHeightFactor")
-        }
-    }
+    var folderPopoverWidthFactor: Double { Self.defaultFolderPopoverWidth }
+    var folderPopoverHeightFactor: Double { Self.defaultFolderPopoverHeight }
 
     @Published var appearancePreference: AppearancePreference = {
         if let raw = UserDefaults.standard.string(forKey: "appearancePreference"),
@@ -2132,283 +1541,6 @@ final class AppStore: ObservableObject {
             UserDefaults.standard.set(appearancePreference.rawValue, forKey: "appearancePreference")
         }
     }
-
-    private static func defaultRememberSetting() -> Bool {
-        if UserDefaults.standard.object(forKey: rememberPageKey) == nil { return true }
-        return UserDefaults.standard.bool(forKey: rememberPageKey)
-    }
-
-    @Published var globalHotKey: HotKeyConfiguration? = AppStore.loadHotKeyConfiguration() {
-        didSet {
-            persistHotKeyConfiguration()
-            AppDelegate.shared?.updateGlobalHotKey(configuration: globalHotKey)
-        }
-    }
-
-    @Published var dockDragEnabled: Bool = {
-        let defaults = UserDefaults.standard
-        if let stored = defaults.object(forKey: AppStore.dockDragEnabledKey) as? Bool {
-            return stored
-        }
-        let legacySideRaw = defaults.string(forKey: AppStore.dockDragSideKey)
-        let enabled = legacySideRaw != DockDragSide.disabled.rawValue
-        defaults.set(enabled, forKey: AppStore.dockDragEnabledKey)
-        return enabled
-    }() {
-        didSet {
-            guard dockDragEnabled != oldValue else { return }
-            UserDefaults.standard.set(dockDragEnabled, forKey: Self.dockDragEnabledKey)
-        }
-    }
-
-    @Published var dockDragSide: DockDragSide = {
-        let defaults = UserDefaults.standard
-        if let raw = defaults.string(forKey: AppStore.dockDragSideKey),
-           let side = DockDragSide(rawValue: raw),
-           side != .disabled {
-            return side
-        }
-        return .bottom
-    }() {
-        didSet {
-            guard dockDragSide != oldValue else { return }
-            UserDefaults.standard.set(dockDragSide.rawValue, forKey: Self.dockDragSideKey)
-        }
-    }
-
-    @Published var dockDragTriggerDistance: Double = {
-        let defaults = UserDefaults.standard
-        let stored = defaults.object(forKey: AppStore.dockDragTriggerDistanceKey) as? Double
-        let initial = stored ?? AppStore.defaultDockDragTriggerDistance
-        let clamped = AppStore.clampDockDragTriggerDistance(initial)
-        if stored == nil || stored != clamped {
-            defaults.set(clamped, forKey: AppStore.dockDragTriggerDistanceKey)
-        }
-        return clamped
-    }() {
-        didSet {
-            let clamped = Self.clampDockDragTriggerDistance(dockDragTriggerDistance)
-            if dockDragTriggerDistance != clamped {
-                dockDragTriggerDistance = clamped
-                return
-            }
-            UserDefaults.standard.set(dockDragTriggerDistance, forKey: Self.dockDragTriggerDistanceKey)
-        }
-    }
-
-    @Published var hotCornerEnabled: Bool = {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: AppStore.hotCornerEnabledKey) == nil {
-            defaults.set(false, forKey: AppStore.hotCornerEnabledKey)
-        }
-        return defaults.bool(forKey: AppStore.hotCornerEnabledKey)
-    }() {
-        didSet {
-            guard hotCornerEnabled != oldValue else { return }
-            UserDefaults.standard.set(hotCornerEnabled, forKey: Self.hotCornerEnabledKey)
-        }
-    }
-
-    @Published var hotCornerPosition: HotCornerPosition = {
-        let defaults = UserDefaults.standard
-        if let raw = defaults.string(forKey: AppStore.hotCornerPositionKey),
-           let position = HotCornerPosition(rawValue: raw) {
-            return position
-        }
-        return .topLeft
-    }() {
-        didSet {
-            guard hotCornerPosition != oldValue else { return }
-            UserDefaults.standard.set(hotCornerPosition.rawValue, forKey: Self.hotCornerPositionKey)
-        }
-    }
-
-    @Published var hotCornerTriggerDelay: Double = {
-        let defaults = UserDefaults.standard
-        let stored = defaults.object(forKey: AppStore.hotCornerTriggerDelayKey) as? Double
-        let initial = stored ?? AppStore.defaultHotCornerTriggerDelay
-        let clamped = AppStore.clampHotCornerTriggerDelay(initial)
-        if stored == nil || stored != clamped {
-            defaults.set(clamped, forKey: AppStore.hotCornerTriggerDelayKey)
-        }
-        return clamped
-    }() {
-        didSet {
-            let clamped = Self.clampHotCornerTriggerDelay(hotCornerTriggerDelay)
-            if hotCornerTriggerDelay != clamped {
-                hotCornerTriggerDelay = clamped
-                return
-            }
-            UserDefaults.standard.set(hotCornerTriggerDelay, forKey: Self.hotCornerTriggerDelayKey)
-        }
-    }
-
-    @Published var hotCornerHitboxSize: Double = {
-        let defaults = UserDefaults.standard
-        let stored = defaults.object(forKey: AppStore.hotCornerHitboxSizeKey) as? Double
-        let initial = stored ?? AppStore.defaultHotCornerHitboxSize
-        let clamped = AppStore.clampHotCornerHitboxSize(initial)
-        if stored == nil || stored != clamped {
-            defaults.set(clamped, forKey: AppStore.hotCornerHitboxSizeKey)
-        }
-        return clamped
-    }() {
-        didSet {
-            let clamped = Self.clampHotCornerHitboxSize(hotCornerHitboxSize)
-            if hotCornerHitboxSize != clamped {
-                hotCornerHitboxSize = clamped
-                return
-            }
-            UserDefaults.standard.set(hotCornerHitboxSize, forKey: Self.hotCornerHitboxSizeKey)
-        }
-    }
-
-    @Published var hotCornerToggleWhenOpen: Bool = {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: AppStore.hotCornerToggleWhenOpenKey) == nil {
-            defaults.set(false, forKey: AppStore.hotCornerToggleWhenOpenKey)
-        }
-        return defaults.bool(forKey: AppStore.hotCornerToggleWhenOpenKey)
-    }() {
-        didSet {
-            guard hotCornerToggleWhenOpen != oldValue else { return }
-            UserDefaults.standard.set(hotCornerToggleWhenOpen, forKey: Self.hotCornerToggleWhenOpenKey)
-        }
-    }
-
-    // Experimental gesture settings consumed by LaunchpadApp gesture wiring.
-    // Remove these fields together with the gesture monitor/configuration flow
-    // if low-level multitouch support is no longer needed.
-    @Published var gestureEnabled: Bool = {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: AppStore.gestureEnabledKey) == nil {
-            defaults.set(false, forKey: AppStore.gestureEnabledKey)
-        }
-        return defaults.bool(forKey: AppStore.gestureEnabledKey)
-    }() {
-        didSet {
-            guard gestureEnabled != oldValue else { return }
-            UserDefaults.standard.set(gestureEnabled, forKey: Self.gestureEnabledKey)
-        }
-    }
-
-    @Published var gestureCloseOnPinchOut: Bool = {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: AppStore.gestureCloseOnPinchOutKey) == nil {
-            defaults.set(false, forKey: AppStore.gestureCloseOnPinchOutKey)
-        }
-        return defaults.bool(forKey: AppStore.gestureCloseOnPinchOutKey)
-    }() {
-        didSet {
-            guard gestureCloseOnPinchOut != oldValue else { return }
-            UserDefaults.standard.set(gestureCloseOnPinchOut, forKey: Self.gestureCloseOnPinchOutKey)
-        }
-    }
-
-    @Published var gestureTapAction: GestureTapAction = {
-        let defaults = UserDefaults.standard
-        if let rawValue = defaults.string(forKey: AppStore.gestureTapActionKey),
-           let action = GestureTapAction(rawValue: rawValue) {
-            return action
-        }
-        let legacyEnabled = defaults.object(forKey: "gestureTapEnabled") as? Bool ?? false
-        let legacyToggle = defaults.object(forKey: "gestureTapToggleWhenOpen") as? Bool ?? false
-        let migratedAction: GestureTapAction = legacyEnabled ? (legacyToggle ? .toggle : .open) : .off
-        defaults.set(migratedAction.rawValue, forKey: AppStore.gestureTapActionKey)
-        return migratedAction
-    }() {
-        didSet {
-            guard gestureTapAction != oldValue else { return }
-            UserDefaults.standard.set(gestureTapAction.rawValue, forKey: Self.gestureTapActionKey)
-        }
-    }
-
-    @Published var gestureFingerCount: GestureFingerCount = {
-        let defaults = UserDefaults.standard
-        guard let rawValue = defaults.object(forKey: AppStore.gestureFingerCountKey) as? Int,
-              let count = GestureFingerCount(rawValue: rawValue) else {
-            defaults.set(GestureFingerCount.four.rawValue, forKey: AppStore.gestureFingerCountKey)
-            return .four
-        }
-        return count
-    }() {
-        didSet {
-            guard gestureFingerCount != oldValue else { return }
-            UserDefaults.standard.set(gestureFingerCount.rawValue, forKey: Self.gestureFingerCountKey)
-        }
-    }
-
-    @Published var gestureDeviceSelectionMode: GestureDeviceSelectionMode = {
-        let defaults = UserDefaults.standard
-        guard let rawValue = defaults.string(forKey: AppStore.gestureDeviceSelectionModeKey),
-              let mode = GestureDeviceSelectionMode(rawValue: rawValue) else {
-            defaults.set(GestureDeviceSelectionMode.automatic.rawValue, forKey: AppStore.gestureDeviceSelectionModeKey)
-            return .automatic
-        }
-        return mode
-    }() {
-        didSet {
-            guard gestureDeviceSelectionMode != oldValue else { return }
-            UserDefaults.standard.set(gestureDeviceSelectionMode.rawValue, forKey: Self.gestureDeviceSelectionModeKey)
-        }
-    }
-
-    @Published var gestureSelectedDeviceIDs: [String] = {
-        let defaults = UserDefaults.standard
-        let rawIDs = defaults.stringArray(forKey: AppStore.gestureSelectedDeviceIDsKey) ?? []
-        let normalized = Array(Set(rawIDs)).sorted()
-        if rawIDs != normalized {
-            defaults.set(normalized, forKey: AppStore.gestureSelectedDeviceIDsKey)
-        }
-        return normalized
-    }() {
-        didSet {
-            let normalized = Array(Set(gestureSelectedDeviceIDs)).sorted()
-            if gestureSelectedDeviceIDs != normalized {
-                gestureSelectedDeviceIDs = normalized
-                return
-            }
-            UserDefaults.standard.set(normalized, forKey: Self.gestureSelectedDeviceIDsKey)
-        }
-    }
-
-    @Published var gestureShowAllInputDevices: Bool = {
-        let defaults = UserDefaults.standard
-        if defaults.object(forKey: AppStore.gestureShowAllInputDevicesKey) == nil {
-            defaults.set(false, forKey: AppStore.gestureShowAllInputDevicesKey)
-        }
-        return defaults.bool(forKey: AppStore.gestureShowAllInputDevicesKey)
-    }() {
-        didSet {
-            guard gestureShowAllInputDevices != oldValue else { return }
-            UserDefaults.standard.set(gestureShowAllInputDevices, forKey: Self.gestureShowAllInputDevicesKey)
-        }
-    }
-
-    @Published private(set) var availableGestureDevices: [GestureInputDevice] = []
-
-    // @Published var isAIEnabled: Bool = {
-    //     if UserDefaults.standard.object(forKey: AppStore.aiFeatureEnabledKey) == nil { return false }
-    //     return UserDefaults.standard.bool(forKey: AppStore.aiFeatureEnabledKey)
-    // }() {
-    //     didSet {
-    //         guard isAIEnabled != oldValue else { return }
-    //         UserDefaults.standard.set(isAIEnabled, forKey: AppStore.aiFeatureEnabledKey)
-    //         // if !isAIEnabled {
-    //         //     AIOverlayController.shared.hide()
-    //         // }
-    //         // AppDelegate.shared?.updateAIOverlayHotKey(configuration: isAIEnabled ? aiOverlayHotKey : nil)
-    //     }
-    // }
-    //
-    // @Published var aiOverlayHotKey: HotKeyConfiguration? = AppStore.loadAIOverlayHotKeyConfiguration() {
-    //     didSet {
-    //         persistAIOverlayHotKeyConfiguration()
-    //         // if isAIEnabled {
-    //         //     AppDelegate.shared?.updateAIOverlayHotKey(configuration: aiOverlayHotKey)
-    //         // }
-    //     }
-    // }
 
     @Published private(set) var currentAppIcon: NSImage {
         didSet { applyCurrentAppIcon() }
@@ -2481,7 +1613,6 @@ final class AppStore: ObservableObject {
     
     // 后台刷新队列与节流
     private var gridRefreshWorkItem: DispatchWorkItem?
-    private var iconScaleWorkItem: DispatchWorkItem?
     private var customTitleRefreshWorkItem: DispatchWorkItem?
     private var searchQueryWorkItem: DispatchWorkItem?
     private let fsEventsQueue = DispatchQueue(label: "app.store.fsevents")
@@ -2896,16 +2027,16 @@ final class AppStore: ObservableObject {
 
     init() {
         let defaults = UserDefaults.standard
+        let existingInstallBeforeDefaults =
+            defaults.object(forKey: Self.useCAGridRendererKey) != nil ||
+            defaults.object(forKey: "isFullscreenMode") != nil ||
+            defaults.object(forKey: Self.gridColumnsKey) != nil
+        Self.enforceFixedAppearancePreferences(in: defaults)
         compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
         compactWindowMaxHeight = CompactWindowLayout.normalizedMaximumHeight(defaults.integer(forKey: Self.compactWindowMaxHeightKey))
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
         Self.migrateFolderLiquidGlassDefaultIfNeeded(from: defaults)
         folderLiquidGlassEnabled = Self.loadFolderLiquidGlassEnabled(from: defaults)
-        let existingInstallBeforeDefaults = defaults.object(forKey: Self.onboardingVersionKey) != nil ||
-            defaults.object(forKey: Self.useCAGridRendererKey) != nil ||
-            defaults.object(forKey: "isFullscreenMode") != nil ||
-            defaults.object(forKey: Self.gridColumnsKey) != nil
-
         if defaults.object(forKey: Self.folderLayoutModeKey) == nil {
             let initialFolderLayout = Self.loadFolderLayoutMode(from: defaults, isExistingInstall: existingInstallBeforeDefaults)
             defaults.set(initialFolderLayout.rawValue, forKey: Self.folderLayoutModeKey)
@@ -2914,67 +2045,31 @@ final class AppStore: ObservableObject {
             self.folderLayoutMode = Self.loadFolderLayoutMode(from: defaults, isExistingInstall: existingInstallBeforeDefaults)
         }
 
-        if UserDefaults.standard.object(forKey: "isFullscreenMode") == nil {
-            self.isFullscreenMode = true // 新用户默认 Classic (Fullscreen)
-            UserDefaults.standard.set(true, forKey: "isFullscreenMode")
-        } else {
-            self.isFullscreenMode = UserDefaults.standard.bool(forKey: "isFullscreenMode")
-        }
+        // Migrate existing installations from any saved compact/hidden-label settings.
+        defaults.set(Self.classicLaunchpadAlwaysEnabled, forKey: "isFullscreenMode")
+        defaults.set(Self.iconLabelsAlwaysVisible, forKey: "showLabels")
         if UserDefaults.standard.object(forKey: PerformanceMode.userDefaultsKey) == nil {
             PerformanceMode.persist(.lean)
         }
 
-        let shouldRememberPage = defaults.object(forKey: Self.rememberPageKey) == nil ? true : defaults.bool(forKey: Self.rememberPageKey)
+        let shouldRememberPage = true
         let savedPageIndex = defaults.object(forKey: Self.rememberedPageIndexKey) as? Int
-
-        let initialScrollSensitivity: Double
-        if defaults.object(forKey: "scrollSensitivity") == nil {
-            initialScrollSensitivity = 0.8
-            defaults.set(initialScrollSensitivity, forKey: "scrollSensitivity")
-        } else {
-            let storedSensitivity = defaults.double(forKey: "scrollSensitivity")
-            initialScrollSensitivity = storedSensitivity == 0 ? Self.defaultScrollSensitivity : storedSensitivity
-        }
-        scrollSensitivity = initialScrollSensitivity
-
-        let storedColumns = defaults.object(forKey: Self.gridColumnsKey) as? Int ?? 7
-        let clampedColumns = Self.clampColumns(storedColumns)
-        self.gridColumnsPerPage = clampedColumns
-
-        defaults.set(clampedColumns, forKey: Self.gridColumnsKey)
-
-        let storedRows = defaults.object(forKey: Self.gridRowsKey) as? Int ?? 5
-        let clampedRows = Self.clampRows(storedRows)
-        self.gridRowsPerPage = clampedRows
-        defaults.set(clampedRows, forKey: Self.gridRowsKey)
-
-        let storedColumnSpacing = defaults.object(forKey: Self.columnSpacingKey) as? Double ?? 20.0
-        let clampedColumnSpacing = Self.clampColumnSpacing(storedColumnSpacing)
-        self.iconColumnSpacing = clampedColumnSpacing
-        defaults.set(clampedColumnSpacing, forKey: Self.columnSpacingKey)
-
-        let storedRowSpacing = defaults.object(forKey: Self.rowSpacingKey) as? Double ?? 14.0
-        let clampedRowSpacing = Self.clampRowSpacing(storedRowSpacing)
-        self.iconRowSpacing = clampedRowSpacing
-        defaults.set(clampedRowSpacing, forKey: Self.rowSpacingKey)
-        let storedDropZoneScale = defaults.object(forKey: Self.folderDropZoneScaleKey) as? Double ?? Self.defaultFolderDropZoneScale
-        let clampedDropZoneScale = Self.clampFolderDropZoneScale(storedDropZoneScale)
-        self.folderDropZoneScale = clampedDropZoneScale
-        defaults.set(clampedDropZoneScale, forKey: Self.folderDropZoneScaleKey)
-        if defaults.object(forKey: Self.pageIndicatorTopPaddingKey) == nil {
-            defaults.set(Self.defaultPageIndicatorTopPadding, forKey: Self.pageIndicatorTopPaddingKey)
-        }
-        if defaults.object(forKey: Self.pageIndicatorPerDisplayEnabledKey) == nil {
-            defaults.set(false, forKey: Self.pageIndicatorPerDisplayEnabledKey)
-        }
-        let storedTopPadding = defaults.object(forKey: Self.pageIndicatorTopPaddingKey) as? Double ?? Self.defaultPageIndicatorTopPadding
-        let clampedTopPadding = Self.clampPageIndicatorTopPadding(storedTopPadding)
-        self.pageIndicatorTopPadding = clampedTopPadding
-        defaults.set(clampedTopPadding, forKey: Self.pageIndicatorTopPaddingKey)
-        // 读取图标缩放默认值
-        if let v = UserDefaults.standard.object(forKey: "iconScale") as? Double {
-            self.iconScale = v
-        }
+        self.iconColumnSpacing = Self.defaultColumnSpacing
+        self.iconRowSpacing = Self.defaultRowSpacing
+        self.enableAnimations = true
+        self.hoverMagnificationScale = Self.fixedHoverMagnificationScale
+        self.activePressScale = Self.defaultActivePressScale
+        self.enableWindowOpenAnimation = true
+        self.windowAnimationDuration = Self.fixedWindowAnimationDuration
+        self.rememberLastPage = true
+        self.backgroundMaskEnabled = false
+        self.folderLiquidGlassEnabled = true
+        self.folderQuickLaunchEnabled = true
+        self.folderDropZoneScale = Self.fixedFolderDropZoneScale
+        self.pageIndicatorOffset = Self.fixedPageIndicatorOffset
+        self.pageIndicatorTopPadding = Self.fixedPageIndicatorTopPadding
+        self.pageIndicatorPerDisplayEnabled = false
+        self.pageIndicatorOverrides = [:]
         if UserDefaults.standard.object(forKey: "enableDropPrediction") == nil {
             UserDefaults.standard.set(true, forKey: "enableDropPrediction")
         }
@@ -2984,74 +2079,8 @@ final class AppStore: ObservableObject {
         if UserDefaults.standard.object(forKey: "enableAnimations") == nil {
             UserDefaults.standard.set(true, forKey: "enableAnimations")
         }
-        if UserDefaults.standard.object(forKey: AppStore.followScrollPagingKey) == nil {
-            UserDefaults.standard.set(false, forKey: AppStore.followScrollPagingKey)
-        }
-        if UserDefaults.standard.object(forKey: AppStore.reverseWheelPagingKey) == nil {
-            UserDefaults.standard.set(false, forKey: AppStore.reverseWheelPagingKey)
-        }
-        if UserDefaults.standard.object(forKey: AppStore.reverseWheelVerticalKey) == nil {
-            UserDefaults.standard.set(false, forKey: AppStore.reverseWheelVerticalKey)
-        }
-        if UserDefaults.standard.object(forKey: AppStore.trackpadVerticalDirectionKey) == nil {
-            UserDefaults.standard.set(TrackpadVerticalDirection.natural.rawValue, forKey: AppStore.trackpadVerticalDirectionKey)
-        }
-        if defaults.object(forKey: Self.dockDragEnabledKey) == nil {
-            let legacySideRaw = defaults.string(forKey: Self.dockDragSideKey)
-            defaults.set(legacySideRaw != DockDragSide.disabled.rawValue, forKey: Self.dockDragEnabledKey)
-        }
-        if defaults.object(forKey: Self.dockDragSideKey) == nil {
-            defaults.set(DockDragSide.bottom.rawValue, forKey: Self.dockDragSideKey)
-        }
-        let storedDockDragDistance = defaults.object(forKey: Self.dockDragTriggerDistanceKey) as? Double ?? Self.defaultDockDragTriggerDistance
-        let clampedDockDragDistance = Self.clampDockDragTriggerDistance(storedDockDragDistance)
-        defaults.set(clampedDockDragDistance, forKey: Self.dockDragTriggerDistanceKey)
-        if defaults.object(forKey: Self.hotCornerEnabledKey) == nil {
-            defaults.set(false, forKey: Self.hotCornerEnabledKey)
-        }
-        if defaults.object(forKey: Self.hotCornerPositionKey) == nil {
-            defaults.set(HotCornerPosition.topLeft.rawValue, forKey: Self.hotCornerPositionKey)
-        }
-        let storedHotCornerDelay = defaults.object(forKey: Self.hotCornerTriggerDelayKey) as? Double ?? Self.defaultHotCornerTriggerDelay
-        let clampedHotCornerDelay = Self.clampHotCornerTriggerDelay(storedHotCornerDelay)
-        defaults.set(clampedHotCornerDelay, forKey: Self.hotCornerTriggerDelayKey)
-        let storedHotCornerHitboxSize = defaults.object(forKey: Self.hotCornerHitboxSizeKey) as? Double ?? Self.defaultHotCornerHitboxSize
-        let clampedHotCornerHitboxSize = Self.clampHotCornerHitboxSize(storedHotCornerHitboxSize)
-        defaults.set(clampedHotCornerHitboxSize, forKey: Self.hotCornerHitboxSizeKey)
-        if defaults.object(forKey: Self.hotCornerToggleWhenOpenKey) == nil {
-            defaults.set(false, forKey: Self.hotCornerToggleWhenOpenKey)
-        }
         if defaults.object(forKey: Self.hideMenuBarKey) == nil {
             defaults.set(false, forKey: Self.hideMenuBarKey)
-        }
-        if defaults.object(forKey: Self.gestureEnabledKey) == nil {
-            defaults.set(false, forKey: Self.gestureEnabledKey)
-        }
-        if defaults.object(forKey: Self.gestureCloseOnPinchOutKey) == nil {
-            defaults.set(false, forKey: Self.gestureCloseOnPinchOutKey)
-        }
-        // Keep a one-time migration path from the older tap booleans so users
-        // do not lose settings if gesture support remains enabled.
-        if defaults.object(forKey: Self.gestureTapActionKey) == nil {
-            let legacyEnabled = defaults.object(forKey: "gestureTapEnabled") as? Bool ?? false
-            let legacyToggle = defaults.object(forKey: "gestureTapToggleWhenOpen") as? Bool ?? false
-            let migratedAction: GestureTapAction = legacyEnabled ? (legacyToggle ? .toggle : .open) : .off
-            defaults.set(migratedAction.rawValue, forKey: Self.gestureTapActionKey)
-        }
-        if defaults.object(forKey: Self.gestureFingerCountKey) == nil {
-            defaults.set(GestureFingerCount.four.rawValue, forKey: Self.gestureFingerCountKey)
-        }
-        if defaults.object(forKey: Self.gestureDeviceSelectionModeKey) == nil {
-            defaults.set(GestureDeviceSelectionMode.automatic.rawValue, forKey: Self.gestureDeviceSelectionModeKey)
-        }
-        if defaults.object(forKey: Self.gestureSelectedDeviceIDsKey) == nil {
-            defaults.set([], forKey: Self.gestureSelectedDeviceIDsKey)
-        }
-        if defaults.object(forKey: Self.gestureShowAllInputDevicesKey) == nil {
-            defaults.set(false, forKey: Self.gestureShowAllInputDevicesKey)
-        }
-        if defaults.object(forKey: Self.gameControllerMenuToggleKey) == nil {
-            defaults.set(true, forKey: Self.gameControllerMenuToggleKey)
         }
         if defaults.object(forKey: Self.useCAGridRendererKey) == nil {
             defaults.set(true, forKey: Self.useCAGridRendererKey)
@@ -3064,9 +2093,6 @@ final class AppStore: ObservableObject {
         }
         if defaults.object(forKey: Self.fuzzySearchEnabledKey) == nil {
             defaults.set(true, forKey: Self.fuzzySearchEnabledKey)
-        }
-        if defaults.object(forKey: Self.searchDebounceMillisecondsKey) == nil {
-            defaults.set(300, forKey: Self.searchDebounceMillisecondsKey)
         }
         if defaults.object(forKey: Self.backgroundMaskEnabledKey) == nil {
             defaults.set(false, forKey: Self.backgroundMaskEnabledKey)
@@ -3083,14 +2109,11 @@ final class AppStore: ObservableObject {
         if UserDefaults.standard.object(forKey: AppStore.iconLabelFontWeightKey) == nil {
             UserDefaults.standard.set(IconLabelFontWeightOption.medium.rawValue, forKey: AppStore.iconLabelFontWeightKey)
         }
-        if UserDefaults.standard.object(forKey: "animationDuration") == nil {
-            UserDefaults.standard.set(0.3, forKey: "animationDuration")
-        }
         if defaults.object(forKey: Self.windowOpenAnimationKey) == nil {
             defaults.set(true, forKey: Self.windowOpenAnimationKey)
         }
         if defaults.object(forKey: Self.windowAnimationDurationKey) == nil {
-            defaults.set(Self.defaultWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
+            defaults.set(Self.fixedWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
         }
         if UserDefaults.standard.object(forKey: "showFPSOverlay") == nil {
             UserDefaults.standard.set(false, forKey: "showFPSOverlay")
@@ -3103,45 +2126,21 @@ final class AppStore: ObservableObject {
         if let storedDualModeAppearance = Self.loadDualModeAppearanceSettings(from: defaults) {
             appearanceSettings = storedDualModeAppearance
         } else {
-            let legacy = Self.legacyAppearanceSettings(from: defaults)
+            let legacy = Self.normalizedAppearanceSettings(Self.legacyAppearanceSettings(from: defaults))
             let migrated = DualModeAppearanceSettings(fullscreen: legacy, compact: legacy)
             appearanceSettings = migrated
         }
 
-        Self.adjustExistingAppearanceScaleIfNeeded(
-            &appearanceSettings,
-            defaults: defaults,
-            isExistingInstall: existingInstallBeforeDefaults
-        )
+        appearanceSettings = Self.normalizedDualModeAppearanceSettings(appearanceSettings)
         self.dualModeAppearanceSettings = appearanceSettings
         if let data = try? JSONEncoder().encode(appearanceSettings) {
             defaults.set(data, forKey: Self.dualModeAppearanceSettingsKey)
         }
 
-        let storedDuration = UserDefaults.standard.double(forKey: "animationDuration")
-        self.animationDuration = storedDuration == 0 ? 0.3 : storedDuration
-        self.enableWindowOpenAnimation = defaults.object(forKey: Self.windowOpenAnimationKey) as? Bool ?? true
-        self.windowAnimationDuration = Self.clampWindowAnimationDuration(
-            defaults.object(forKey: Self.windowAnimationDurationKey) as? Double ?? Self.defaultWindowAnimationDuration
-        )
-        self.dockDragEnabled = defaults.object(forKey: Self.dockDragEnabledKey) as? Bool ?? true
-        let storedDockDragSide = DockDragSide(rawValue: defaults.string(forKey: Self.dockDragSideKey) ?? "")
-        self.dockDragSide = storedDockDragSide == .disabled ? .bottom : (storedDockDragSide ?? .bottom)
-        self.dockDragTriggerDistance = clampedDockDragDistance
-        self.hotCornerEnabled = defaults.object(forKey: Self.hotCornerEnabledKey) as? Bool ?? false
-        self.hotCornerPosition = HotCornerPosition(rawValue: defaults.string(forKey: Self.hotCornerPositionKey) ?? "") ?? .topLeft
-        self.hotCornerTriggerDelay = clampedHotCornerDelay
-        self.hotCornerHitboxSize = clampedHotCornerHitboxSize
-        self.hotCornerToggleWhenOpen = defaults.object(forKey: Self.hotCornerToggleWhenOpenKey) as? Bool ?? false
+        self.enableWindowOpenAnimation = true
+        self.windowAnimationDuration = Self.fixedWindowAnimationDuration
         self.hideMenuBar = defaults.object(forKey: Self.hideMenuBarKey) as? Bool ?? false
-        self.gestureEnabled = defaults.object(forKey: Self.gestureEnabledKey) as? Bool ?? false
-        self.gestureCloseOnPinchOut = defaults.object(forKey: Self.gestureCloseOnPinchOutKey) as? Bool ?? false
-        self.gestureTapAction = GestureTapAction(rawValue: defaults.string(forKey: Self.gestureTapActionKey) ?? "") ?? .off
-        self.gestureFingerCount = GestureFingerCount(rawValue: defaults.integer(forKey: Self.gestureFingerCountKey)) ?? .four
-        self.gestureDeviceSelectionMode = GestureDeviceSelectionMode(rawValue: defaults.string(forKey: Self.gestureDeviceSelectionModeKey) ?? "") ?? .automatic
-        self.gestureSelectedDeviceIDs = Array(Set(defaults.stringArray(forKey: Self.gestureSelectedDeviceIDsKey) ?? [])).sorted()
-        self.gestureShowAllInputDevices = defaults.object(forKey: Self.gestureShowAllInputDevicesKey) as? Bool ?? false
-        self.enableAnimations = UserDefaults.standard.object(forKey: "enableAnimations") as? Bool ?? true
+        self.enableAnimations = true
         self.customIconFileURL = AppStore.customIconFileURL
 
         let fallbackIcon = (NSApplication.shared.applicationIconImage?.copy() as? NSImage) ?? NSImage(size: NSSize(width: 512, height: 512))
@@ -3161,7 +2160,6 @@ final class AppStore: ObservableObject {
         if sanitizedSources != customAppSourcePaths {
             customAppSourcePaths = sanitizedSources
         }
-        refreshGestureDeviceInventory()
 
         setupVolumeObservers()
 
@@ -3188,10 +2186,6 @@ final class AppStore: ObservableObject {
         }
 
         syncLoginItemStatusFromSystem()
-    }
-
-    private static func clampedSearchDebounceMilliseconds(_ value: Double) -> Double {
-        min(max(value, searchDebounceMillisecondsRange.lowerBound), searchDebounceMillisecondsRange.upperBound)
     }
 
     /// Resolve against the saved layout, not the flattened search results.
@@ -3225,7 +2219,7 @@ final class AppStore: ObservableObject {
     private func scheduleSearchQueryUpdate(with value: String) {
         searchQueryWorkItem?.cancel()
 
-        let delayMilliseconds = Self.clampedSearchDebounceMilliseconds(searchDebounceMilliseconds)
+        let delayMilliseconds = Self.searchQueryDebounceMilliseconds
         guard delayMilliseconds > 0 else {
             searchQuery = value
             return
@@ -3477,16 +2471,6 @@ final class AppStore: ObservableObject {
         return result
     }
 
-    private static func loadHotKeyConfiguration() -> HotKeyConfiguration? {
-        guard let dict = UserDefaults.standard.dictionary(forKey: globalHotKeyKey) else { return nil }
-        return HotKeyConfiguration(dictionary: dict)
-    }
-
-    // private static func loadAIOverlayHotKeyConfiguration() -> HotKeyConfiguration? {
-    //     guard let dict = UserDefaults.standard.dictionary(forKey: aiOverlayHotKeyKey) else { return nil }
-    //     return HotKeyConfiguration(dictionary: dict)
-    // }
-
     private func persistCustomTitles() {
         let sanitized = customTitles.reduce(into: [String: String]()) { partialResult, entry in
             let trimmed = entry.value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -3502,41 +2486,10 @@ final class AppStore: ObservableObject {
         }
     }
 
-    // private func persistAIOverlayHotKeyConfiguration() {
-    //     let defaults = UserDefaults.standard
-    //     if let config = aiOverlayHotKey {
-    //         defaults.set(config.dictionaryRepresentation, forKey: Self.aiOverlayHotKeyKey)
-    //     } else {
-    //         defaults.removeObject(forKey: Self.aiOverlayHotKeyKey)
-    //     }
-    // }
-
-    private func persistHotKeyConfiguration() {
-        let defaults = UserDefaults.standard
-        if let config = globalHotKey {
-            defaults.set(config.dictionaryRepresentation, forKey: Self.globalHotKeyKey)
-        } else {
-            defaults.removeObject(forKey: Self.globalHotKeyKey)
-        }
-    }
-
-
-    // 图标缩放（相对于格子）：默认 1.0，范围建议 0.8~1.1
-    @Published var iconScale: Double = 1.0 {
-        didSet {
-            UserDefaults.standard.set(iconScale, forKey: "iconScale")
-            guard !isApplyingScopedAppearanceState else { return }
-            updateScopedAppearanceSettings(for: currentAppearanceLayoutMode) { $0.iconScale = iconScale }
-            iconScaleWorkItem?.cancel()
-            let work = DispatchWorkItem { [weak self] in self?.triggerGridRefresh() }
-            iconScaleWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: work)
-        }
-    }
+    var iconScale: Double { Self.defaultIconScale }
 
     func configure(modelContext: ModelContext) {
         self.modelContext = modelContext
-        evaluateOnboardingGate()
         
         // 立即尝试加载持久化数据（如果已有数据）——不要过早设置标记，等待加载完成时设置
         if !hasAppliedOrderFromStore {
@@ -3566,53 +2519,6 @@ final class AppStore: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-    }
-
-    func completeOnboarding() {
-        UserDefaults.standard.set(Self.currentOnboardingVersion, forKey: Self.onboardingVersionKey)
-        shouldShowOnboarding = false
-    }
-
-    func forceShowOnboarding() {
-        guard isFullscreenMode else { return }
-
-        if isSetting {
-            isSetting = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
-                guard let self else { return }
-                self.shouldShowOnboarding = false
-                self.shouldShowOnboarding = true
-            }
-            return
-        }
-
-        shouldShowOnboarding = false
-        DispatchQueue.main.async { [weak self] in
-            self?.shouldShowOnboarding = true
-        }
-    }
-
-    private func evaluateOnboardingGate() {
-        let shownVersion = UserDefaults.standard.object(forKey: Self.onboardingVersionKey) as? Int ?? 0
-        guard shownVersion < Self.currentOnboardingVersion else {
-            shouldShowOnboarding = false
-            return
-        }
-
-        if isExistingUserForOnboarding() {
-            UserDefaults.standard.set(Self.currentOnboardingVersion, forKey: Self.onboardingVersionKey)
-            shouldShowOnboarding = false
-            return
-        }
-
-        shouldShowOnboarding = true
-    }
-
-    private func isExistingUserForOnboarding() -> Bool {
-        if !hiddenAppPaths.isEmpty { return true }
-        if !customTitles.isEmpty { return true }
-        if hasPersistedOrderData() { return true }
-        return false
     }
 
     // MARK: - Order Persistence
@@ -4953,7 +3859,9 @@ final class AppStore: ObservableObject {
 
         guard didChange else { return }
         folders = updatedFolders
-        let foldersByID = Dictionary(uniqueKeysWithValues: updatedFolders.map { ($0.id, $0) })
+        let foldersByID = updatedFolders.reduce(into: [String: FolderInfo]()) { result, folder in
+            result[folder.id] = folder
+        }
         for index in items.indices {
             if case .folder(let folder) = items[index], let updated = foldersByID[folder.id] {
                 items[index] = .folder(updated)
@@ -5224,21 +4132,15 @@ final class AppStore: ObservableObject {
             Self.folderLayoutModeKey,
             "hideDock",
             Self.hideMenuBarKey,
-            "scrollSensitivity",
             Self.gridColumnsKey,
             Self.gridRowsKey,
             Self.columnSpacingKey,
-            Self.rowSpacingKey,
             "enableDropPrediction",
             Self.folderDropZoneScaleKey,
             "enableAnimations",
             Self.hoverMagnificationKey,
             Self.hoverMagnificationScaleKey,
             Self.activePressEffectKey,
-            Self.followScrollPagingKey,
-            Self.reverseWheelPagingKey,
-            Self.reverseWheelVerticalKey,
-            Self.trackpadVerticalDirectionKey,
             Self.activePressScaleKey,
             "iconScale",
             "iconLabelFontSize",
@@ -5451,7 +4353,9 @@ final class AppStore: ObservableObject {
         // 增加防抖和优化检查
         let currentItemsCount = items.count
         let appsInFolders: Set<AppInfo> = Set(folders.flatMap { $0.apps })
-        let folderById: [String: FolderInfo] = Dictionary(uniqueKeysWithValues: folders.map { ($0.id, $0) })
+        let folderById = folders.reduce(into: [String: FolderInfo]()) { result, folder in
+            result[folder.id] = folder
+        }
 
         var newItems: [LaunchpadItem] = []
         newItems.reserveCapacity(currentItemsCount + 10) // 预分配容量
@@ -5837,7 +4741,9 @@ final class AppStore: ObservableObject {
             for row in existing { modelContext.delete(row) }
 
             // 构建 folders 查找表
-            let folderById: [String: FolderInfo] = Dictionary(uniqueKeysWithValues: folders.map { ($0.id, $0) })
+            let folderById = folders.reduce(into: [String: FolderInfo]()) { result, folder in
+                result[folder.id] = folder
+            }
             let itemsPerPage = self.itemsPerPage // 使用计算属性
 
             for (idx, item) in items.enumerated() {
@@ -6228,6 +5134,20 @@ final class AppStore: ObservableObject {
             
             // 触发网格视图刷新
             triggerGridRefresh()
+        }
+    }
+
+    func updateAdaptiveGridMetrics(for availableSize: CGSize) {
+        let metrics = AdaptiveLaunchpadGridMetrics.calculate(for: availableSize,
+                                                              columnSpacing: CGFloat(iconColumnSpacing),
+                                                              rowSpacing: CGFloat(iconRowSpacing))
+        guard metrics.columns != gridColumnsPerPage || metrics.rows != gridRowsPerPage else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self,
+                  metrics.columns != self.gridColumnsPerPage || metrics.rows != self.gridRowsPerPage else { return }
+            self.gridColumnsPerPage = metrics.columns
+            self.gridRowsPerPage = metrics.rows
+            self.handleGridConfigurationChange()
         }
     }
 
@@ -7011,65 +5931,11 @@ final class AppStore: ObservableObject {
         }
     }
 
-    func setGlobalHotKey(keyCode: UInt16, modifierFlags: NSEvent.ModifierFlags) {
-        let normalized = modifierFlags.normalizedShortcutFlags
-        let configuration = HotKeyConfiguration(keyCode: keyCode, modifierFlags: normalized)
-        if globalHotKey != configuration {
-            globalHotKey = configuration
-        }
-    }
-
-    func clearGlobalHotKey() {
-        if globalHotKey != nil {
-            globalHotKey = nil
-        }
-    }
-
-    // func setAIOverlayHotKey(keyCode: UInt16, modifierFlags: NSEvent.ModifierFlags) {
-    //     let normalized = modifierFlags.normalizedShortcutFlags
-    //     let configuration = HotKeyConfiguration(keyCode: keyCode, modifierFlags: normalized)
-    //     if aiOverlayHotKey != configuration {
-    //         aiOverlayHotKey = configuration
-    //     }
-    // }
-    //
-    // func clearAIOverlayHotKey() {
-    //     if aiOverlayHotKey != nil {
-    //         aiOverlayHotKey = nil
-    //     }
-    // }
-
     func persistCurrentPageIfNeeded() {
         guard rememberLastPage else { return }
         UserDefaults.standard.set(currentPage, forKey: Self.rememberedPageIndexKey)
     }
 
-    func hotKeyDisplayText(nonePlaceholder: String) -> String {
-        guard let config = globalHotKey else { return nonePlaceholder }
-        let base = config.displayString
-        if config.modifierFlags.isEmpty {
-            return base + " • " + localized(.shortcutNoModifierWarning)
-        }
-        return base
-    }
-
-    func syncGlobalHotKeyRegistration() {
-        AppDelegate.shared?.updateGlobalHotKey(configuration: globalHotKey)
-    }
-
-    // func aiOverlayHotKeyDisplayText(nonePlaceholder: String) -> String {
-    //     guard let config = aiOverlayHotKey else { return nonePlaceholder }
-    //     let base = config.displayString
-    //     if config.modifierFlags.isEmpty {
-    //         return base + " • " + localized(.shortcutNoModifierWarning)
-    //     }
-    //     return base
-    // }
-    //
-    // func syncAIOverlayHotKeyRegistration() {
-    //     // AppDelegate.shared?.updateAIOverlayHotKey(configuration: isAIEnabled ? aiOverlayHotKey : nil)
-    // }
-    
     // MARK: - 导入应用排序功能
     /// 从JSON数据导入应用排序
     func importAppOrderFromJSON(_ jsonData: Data) -> Bool {
@@ -7086,7 +5952,9 @@ final class AppStore: ObservableObject {
         let candidates = presetCandidateAppsInCurrentOrder()
         guard !candidates.isEmpty else { return false }
 
-        let candidateByPath = Dictionary(uniqueKeysWithValues: candidates.map { ($0.path, $0) })
+        let candidateByPath = candidates.reduce(into: [String: PresetAppCandidate]()) { result, candidate in
+            result[candidate.path] = candidate
+        }
         var unusedPaths = Set(candidates.map(\.path))
         var rebuiltItems: [LaunchpadItem] = []
         rebuiltItems.reserveCapacity(candidates.count + 1)
@@ -7326,7 +6194,9 @@ final class AppStore: ObservableObject {
         }
         
         // 构建应用路径到应用对象的映射
-        let appPathMap = Dictionary(uniqueKeysWithValues: apps.map { ($0.url.path, $0) })
+        let appPathMap = apps.reduce(into: [String: AppInfo]()) { result, app in
+            result[app.url.path] = app
+        }
         
         // 重建items数组
         var newItems: [LaunchpadItem] = []
@@ -7920,31 +6790,5 @@ private final class UpdateNotificationDelegate: NSObject, UNUserNotificationCent
             return
         }
         openHandler(url)
-    }
-}
-
-extension NSEvent.ModifierFlags {
-    static let shortcutComponents: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
-
-    var normalizedShortcutFlags: NSEvent.ModifierFlags {
-        intersection(.deviceIndependentFlagsMask).intersection(Self.shortcutComponents)
-    }
-
-    var carbonFlags: UInt32 {
-        var value: UInt32 = 0
-        if contains(.command) { value |= UInt32(cmdKey) }
-        if contains(.option) { value |= UInt32(optionKey) }
-        if contains(.control) { value |= UInt32(controlKey) }
-        if contains(.shift) { value |= UInt32(shiftKey) }
-        return value
-    }
-
-    var displaySymbols: [String] {
-        var symbols: [String] = []
-        if contains(.control) { symbols.append("⌃") }
-        if contains(.option) { symbols.append("⌥") }
-        if contains(.shift) { symbols.append("⇧") }
-        if contains(.command) { symbols.append("⌘") }
-        return symbols
     }
 }

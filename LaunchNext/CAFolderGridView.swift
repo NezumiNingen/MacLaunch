@@ -71,9 +71,6 @@ final class CAFolderGridView: NSView {
     var animationDuration: Double = 0.3
     var isLayoutLocked: Bool = false
     var scrollSensitivity: Double = AppStore.defaultScrollSensitivity
-    var reverseWheelPagingDirection: Bool = false
-    var reverseWheelVerticalDirection: Bool = false
-    var trackpadVerticalDirection: AppStore.TrackpadVerticalDirection = .natural
     var verticalHeaderHeight: CGFloat = 0 {
         didSet {
             guard verticalHeaderHeight != oldValue else { return }
@@ -869,7 +866,6 @@ final class CAFolderGridView: NSView {
 
     private func handleWheelPaging(with scaledDelta: CGFloat) {
         let direction = scaledDelta > 0 ? 1 : -1
-        let effectiveDirection = reverseWheelPagingDirection ? -direction : direction
         if wheelLastDirection != direction {
             wheelAccumulatedDelta = 0
         }
@@ -884,7 +880,7 @@ final class CAFolderGridView: NSView {
             return
         }
 
-        let targetPage = effectiveDirection > 0 ? currentPage - 1 : currentPage + 1
+        let targetPage = direction > 0 ? currentPage - 1 : currentPage + 1
         wheelLastFlipAt = now
         wheelAccumulatedDelta = 0
         if targetPage < 0 || targetPage >= pageCount {
@@ -960,18 +956,14 @@ final class CAFolderGridView: NSView {
         let raw = event.scrollingDeltaY
         let baseline = max(AppStore.defaultScrollSensitivity, 0.0001)
         let sensitivityScale = CGFloat(max(scrollSensitivity, 0.0001) / baseline)
-        // Precise devices use their own vertical direction setting; mouse wheel uses
-        // the wheel-only reverse toggle.
-        let mouseSign: CGFloat = reverseWheelVerticalDirection ? 1 : -1
-        let preciseSign: CGFloat = trackpadVerticalDirection == .natural ? -1 : 1
-        let delta = (event.hasPreciseScrollingDeltas ? preciseSign * raw : mouseSign * raw) * sensitivityScale
+        let delta = -raw * sensitivityScale
         verticalOffset = clampVerticalOffset(verticalOffset - delta, metrics: metrics)
         updateLayout(animated: false)
     }
 
     private func precisePageVerticalDelta(from deltaY: CGFloat, isPrecise: Bool) -> CGFloat {
         guard isPrecise else { return -deltaY }
-        return trackpadVerticalDirection == .natural ? deltaY : -deltaY
+        return deltaY
     }
 
     private func navigateToPage(_ page: Int, animated: Bool) {

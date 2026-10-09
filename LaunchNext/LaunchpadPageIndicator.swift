@@ -35,6 +35,10 @@ enum PageControlMetrics {
     static func backgroundButtonOffset(pageCount: Int) -> CGFloat {
         organizeButtonOffset(pageCount: pageCount) + organizerWidth / 2 + sideGap + backgroundButtonWidth / 2
     }
+
+    static func settingsButtonOffset(pageCount: Int) -> CGFloat {
+        backgroundButtonOffset(pageCount: pageCount) + backgroundButtonWidth / 2 + sideGap + buttonSize / 2
+    }
 }
 
 /// A draggable Liquid Glass page control with a cursor-following selection capsule.
