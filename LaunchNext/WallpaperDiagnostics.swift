@@ -13,9 +13,9 @@ enum WallpaperDiagnostics {
     }
     private static let session = String(UUID().uuidString.prefix(8))
     private static var sequence = 0
-    private static let queue = DispatchQueue(label: "com.roversx.launchnext.wallpaper-diagnostics", qos: .utility)
+    private static let queue = DispatchQueue(label: "io.nezuminingen.maclaunch.wallpaper-diagnostics", qos: .utility)
     private static let directory = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent("Library/Logs/LaunchNext", isDirectory: true)
+        .appendingPathComponent("Library/Logs/MacLaunch", isDirectory: true)
 
     static func record(_ event: @autoclosure () -> String) {
         guard isEnabled else { return }

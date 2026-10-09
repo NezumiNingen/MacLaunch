@@ -40,7 +40,7 @@ struct SettingsView: View {
     }
     @State private var showResetConfirm = false
     @State private var showResetAppearanceConfirm = false
-    @State private var selectedSection: SettingsSection = .general
+    @State private var selectedSection: SettingsSection
     @State private var titleSearch: String = ""
     @State private var hasHiddenAppEntries: Bool = false
     @State private var hasNotHiddenAppEntries: Bool = false
@@ -68,6 +68,7 @@ struct SettingsView: View {
     @State private var selectedBackupIDs: Set<String> = []
     @State private var showPerformanceRestartPrompt = false
     @State private var capturingShortcutTarget: ShortcutTarget? = nil
+
     @State private var shortcutCaptureMonitor: Any?
     @State private var pendingShortcut: AppStore.HotKeyConfiguration?
     @State private var cachedAllAppEntries: [AppEntry] = []
@@ -93,8 +94,9 @@ struct SettingsView: View {
     private let dockDragSelectableSides: [AppStore.DockDragSide] = [.bottom, .left, .right]
     private var uiScale: CGFloat { LaunchpadUIMetrics.overallScale }
 
-    init(appStore: AppStore) {
+    init(appStore: AppStore, openShortcutSettings: Bool = false) {
         self.appStore = appStore
+        _selectedSection = State(initialValue: openShortcutSettings ? .shortcuts : .general)
         _backgroundImageSourceSelection = State(initialValue: appStore.backgroundImageSource)
         _hoveredBackgroundImageSource = State(initialValue: nil)
     }
@@ -1091,14 +1093,16 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         var entries: [BackupEntry] = []
         for url in contents {
             let name = url.lastPathComponent
-            guard name.hasPrefix("LaunchNext_"), name.hasSuffix(".launchnext") else { continue }
+            let backupFormat = [("MacLaunch_", ".maclaunch"), ("LaunchNext_", ".launchnext")]
+                .first { name.hasPrefix($0.0) && name.hasSuffix($0.1) }
+            guard let backupFormat else { continue }
             let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
             guard isDirectory else { continue }
             let storeURL = url.appendingPathComponent("Data.store")
             guard fm.fileExists(atPath: storeURL.path) else { continue }
             let rawDate = name
-                .replacingOccurrences(of: "LaunchNext_", with: "")
-                .replacingOccurrences(of: ".launchnext", with: "")
+                .replacingOccurrences(of: backupFormat.0, with: "")
+                .replacingOccurrences(of: backupFormat.1, with: "")
             guard let date = formatter.date(from: rawDate) else { continue }
             let size = dataStoreSize(at: url)
             entries.append(BackupEntry(id: url.path, url: url, date: date, sizeBytes: size))
@@ -1143,7 +1147,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             dataStorePath = supportURL.appendingPathComponent("Data.store").path
         } else {
             let home = FileManager.default.homeDirectoryForCurrentUser.path
-            dataStorePath = "\(home)/Library/Application Support/LaunchNext/Data.store"
+            dataStorePath = "\(home)/Library/Application Support/MacLaunch/Data.store"
         }
         let escapedPath = dataStorePath.replacingOccurrences(of: "\"", with: "\\\"")
         return """
@@ -2542,6 +2546,11 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                                 getVersion(fallback: appStore.localized(.versionFallback))))
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.white)
+
+                    Text(appStore.localized(.modifiedFrom))
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .multilineTextAlignment(.center)
                 }
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 20)
@@ -2574,9 +2583,6 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                 }
                 glassButton(title: appStore.localized(.aboutContribute), systemImage: "hands.sparkles") {
                     openExternalLink("https://github.com/NezumiNingen/MacLaunch")
-                }
-                glassButton(title: appStore.localized(.aboutBlog), systemImage: "globe") {
-                    openExternalLink("https://blog.closex.org")
                 }
             }
             .frame(maxWidth: .infinity)
@@ -2952,12 +2958,12 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                             Divider()
-                            cliCommandRow("LaunchNext --cli help")
-                            cliCommandRow("LaunchNext --tui")
+                            cliCommandRow("maclaunch --cli help")
+                            cliCommandRow("maclaunch --tui")
                             DisclosureGroup(
                                 isExpanded: $showCLIFullPathCommand,
                                 content: {
-                                    cliCommandRow("/Applications/LaunchNext.app/Contents/MacOS/LaunchNext --tui")
+                                    cliCommandRow("\(Bundle.main.executableURL?.path ?? "maclaunch") --tui")
                                         .padding(.top, 4)
                                 },
                                 label: {
@@ -3785,7 +3791,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("LaunchNext", systemImage: "keyboard")
+                        Label("MacLaunch", systemImage: "keyboard")
                             .font(.headline)
                         Text(appStore.localized(.globalShortcutDescription))
                             .font(.footnote)
@@ -5654,13 +5660,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     // MARK: - Export / Import Application Support Data
     private func supportDirectoryURL() throws -> URL {
-        let fm = FileManager.default
-        let appSupport = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        let dir = appSupport.appendingPathComponent("LaunchNext", isDirectory: true)
-        if !fm.fileExists(atPath: dir.path) {
-            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
-        }
-        return dir
+        try AppStore.applicationSupportDirectoryURL()
     }
 
     private func exportDataFolder() {
@@ -5685,7 +5685,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd'_'HH.mm.ss"
-        let folderName = "LaunchNext_" + formatter.string(from: Date()) + ".launchnext"
+        let folderName = "MacLaunch_" + formatter.string(from: Date()) + ".maclaunch"
         let destDir = destParent.appendingPathComponent(folderName, isDirectory: true)
         let fm = FileManager.default
 
@@ -5693,7 +5693,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             try copyDirectory(from: sourceDir, to: destDir)
             exportPreferences(to: destDir)
             guard backupExportLooksComplete(destDir) else {
-                throw NSError(domain: "LaunchNextBackup",
+                throw NSError(domain: "MacLaunchBackup",
                               code: 1,
                               userInfo: [NSLocalizedDescriptionKey: "Backup export is incomplete."])
             }
@@ -5877,7 +5877,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     // MARK: - Preferences export/import
     private var currentPrefsDomain: String {
-        Bundle.main.bundleIdentifier ?? "LaunchNextAppStore"
+        Bundle.main.bundleIdentifier ?? "MacLaunchAppStore"
     }
 
     private func exportPreferences(to folder: URL) {
@@ -5900,7 +5900,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     private func importPreferences(from folder: URL, allowedKeys: Set<String>? = nil) {
         let domain = currentPrefsDomain
-        let candidateNames = [domain, AppStore.legacyPreferencesDomain]
+        let candidateNames = [domain] + AppStore.legacyPreferencesDomains
         guard let url = candidateNames
             .map({ folder.appendingPathComponent("\($0).plist") })
             .first(where: { FileManager.default.fileExists(atPath: $0.path) }) else { return }
@@ -5939,7 +5939,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                                              includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
                                              options: [],
                                              errorHandler: { _, _ in true }) else {
-            throw NSError(domain: "LaunchNextBackup",
+            throw NSError(domain: "MacLaunchBackup",
                           code: 2,
                           userInfo: [NSLocalizedDescriptionKey: "Failed to enumerate backup source directory."])
         }
@@ -6079,7 +6079,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         let alert = NSAlert()
         alert.messageText = "Backup Failed"
         let message = (error as NSError).localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        alert.informativeText = message.isEmpty ? "LaunchNext could not create a complete backup." : message
+        alert.informativeText = message.isEmpty ? "MacLaunch could not create a complete backup." : message
         alert.alertStyle = .warning
         alert.addButton(withTitle: appStore.localized(.okButton))
 

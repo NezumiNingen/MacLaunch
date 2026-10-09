@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **Языки**: [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [Русский](README.ru.md) | [हिन्दी](README.hi.md) | [Tiếng Việt](README.vi.md) | [Italiano](README.it.md) | [Čeština](README.cs.md) | [Polski](README.pl.md)
 
@@ -6,25 +6,25 @@
 
 **[Скачать здесь](https://github.com/NezumiNingen/MacLaunch/releases/latest)** - Получить последнюю версию
 
-🌐 **Сайт**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **Документация**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **Сайт**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/) \
+📚 **Документация**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/)
 
-⭐ Рассмотрите возможность поставить звезду [LaunchNext](https://github.com/RoversX/LaunchNext) и особенно оригинальному проекту [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
+⭐ Рассмотрите возможность поставить звезду [MacLaunch](https://github.com/NezumiNingen/MacLaunch) и особенно оригинальному проекту [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
 
 | | |
 |:---:|:---:|
 | ![](../public/banner.webp) | ![](../public/setting1.webp) |
 | ![](../public/setting2.webp) | ![](../public/setting3.webp) |
 
-macOS Tahoe убрала launchpad, и им так сложно пользоваться, он не использует ваш Bio GPU. Пожалуйста, Apple, хотя бы дайте людям возможность переключиться обратно. А пока, вот LaunchNext.
+macOS Tahoe убрала launchpad, и им так сложно пользоваться, он не использует ваш Bio GPU. Пожалуйста, Apple, хотя бы дайте людям возможность переключиться обратно. А пока, вот MacLaunch.
 
 *Создано на основе [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) от ggkevinnnn — огромное спасибо оригинальному проекту!❤️*
 
-*LaunchNow выбрал лицензию GPL 3. LaunchNext следует тем же условиям лицензии.*
+*LaunchNow выбрал лицензию GPL 3. MacLaunch следует тем же условиям лицензии.*
 
 If macOS blocks first launch, open the app once, then choose Open Anyway in System Settings > Privacy & Security.
 
-## Что дает LaunchNext
+## Что дает MacLaunch
 
 - ✅ **Импорт в один клик из старого системного Launchpad** - напрямую читает нативную SQLite-базу Launchpad и восстанавливает папки, позиции приложений и компоновку
 - ✅ **Ручная организация приложений** - перемещайте приложения, создавайте папки и сохраняйте нужную вам структуру
@@ -32,7 +32,7 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Компактный и полноэкранный режимы** - с поддержкой раздельных настроек
 - ✅ **Клавиатурный workflow** - быстрый поиск, навигация и запуск
 - ✅ **Поддержка CLI / TUI** - просматривайте и управляйте компоновкой из терминала
-- ✅ **Активация через Hot Corner и нативные жесты** - несколько способов глобально открыть LaunchNext
+- ✅ **Активация через Hot Corner и нативные жесты** - несколько способов глобально открыть MacLaunch
 - ✅ **Перетаскивание приложений прямо в Dock** - доступно в движке Core Animation
 - ✅ **Центр обновлений с Markdown release notes** - более богатый встроенный опыт обновлений
 - ✅ **Инструменты резервного копирования и восстановления** - более безопасный экспорт и возврат данных
@@ -52,12 +52,12 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 Данные приложения хранятся здесь:
 
 ```text
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ## Нативная интеграция с Launchpad
 
-LaunchNext может напрямую читать системную базу Launchpad:
+MacLaunch может напрямую читать системную базу Launchpad:
 
 ```bash
 /private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db
@@ -105,7 +105,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Начало работы
 
-1. LaunchNext при первом запуске сканирует все установленные приложения
+1. MacLaunch при первом запуске сканирует все установленные приложения
 2. Импортируйте старый layout Launchpad или начните с пустого layout
 3. Используйте поиск, клавиатуру, drag-and-drop и папки для организации приложений
 4. Откройте Настройки, чтобы настроить движок, режим отображения, способы активации и автоматизацию
@@ -120,22 +120,22 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 - **Legacy Engine** - сохраняет старый путь рендеринга для максимальной совместимости
 - **Next Engine + Core Animation** - рекомендуется для лучшего общего опыта и новых функций
-- **Компактный / Полноэкранный** - LaunchNext поддерживает оба режима и может хранить отдельные настройки
+- **Компактный / Полноэкранный** - MacLaunch поддерживает оба режима и может хранить отдельные настройки
 
 ## Ключевые возможности
 
 ### Активация и ввод
 
-- **Поддержка Hot Corner** - открывайте LaunchNext из настраиваемого угла экрана
+- **Поддержка Hot Corner** - открывайте MacLaunch из настраиваемого угла экрана
 - **Экспериментальная поддержка нативных жестов** - действия pinch / tap четырьмя пальцами
-- **Поддержка глобальных горячих клавиш** - открывайте LaunchNext откуда угодно
+- **Поддержка глобальных горячих клавиш** - открывайте MacLaunch откуда угодно
 - **Перетаскивание в Dock** - передавайте приложения прямо в Dock macOS через движок Core Animation
 
 ### Автоматизация и workflow для продвинутых пользователей
 
 - **Поддержка CLI / TUI** - просматривайте компоновки, ищите приложения, создавайте папки, перемещайте приложения и автоматизируйте workflow
 - **Подходит для agent workflow** - хорошо работает с терминальными AI agent и shell-автоматизацией
-- **Включение командной строки из Настроек** - можно установить или удалить управляемую команду `launchnext`
+- **Включение командной строки из Настроек** - можно установить или удалить управляемую команду `maclaunch`
 
 ### Обновления
 
@@ -152,7 +152,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### Доступность и навигация
 
 - **Голосовая поддержка** - озвучивание приложений и папок при навигации
-- **Поддержка контроллера** - управляйте LaunchNext и папками с игрового контроллера
+- **Поддержка контроллера** - управляйте MacLaunch и папками с игрового контроллера
 - **Клавиатурное взаимодействие** - быстрый поиск и навигация без мыши
 
 ## Производительность и стабильность
@@ -173,7 +173,7 @@ A: Убедитесь, что у вас macOS 26 или новее, при не�
 A: `Next Engine + Core Animation` рекомендуется для лучшего опыта. Используйте `Legacy Engine` только если вам действительно нужен старый путь совместимости.
 
 **Q: Почему команда CLI еще не существует?**  
-A: Сначала включите интерфейс командной строки в Настройках. LaunchNext может установить и удалить управляемый shim `launchnext` за вас.
+A: Сначала включите интерфейс командной строки в Настройках. MacLaunch может установить и удалить управляемый shim `maclaunch` за вас.
 
 ## Вклад
 
@@ -195,13 +195,13 @@ A: Сначала включите интерфейс командной стр�
 
 ## Будущее управления приложениями
 
-Пока Apple уходит от настраиваемых лаунчеров приложений, LaunchNext старается сохранить ручную организацию, контроль пользователя и быстрый доступ на современном macOS.
+Пока Apple уходит от настраиваемых лаунчеров приложений, MacLaunch старается сохранить ручную организацию, контроль пользователя и быстрый доступ на современном macOS.
 
-**LaunchNext** — это не просто замена Launchpad, а практичный ответ на деградацию рабочего процесса.
+**MacLaunch** — это не просто замена Launchpad, а практичный ответ на деградацию рабочего процесса.
 
 ---
 
-**LaunchNext** - Верните контроль над своим лаунчером приложений 🚀
+**MacLaunch** - Верните контроль над своим лаунчером приложений 🚀
 
 *Для пользователей macOS, которые не хотят идти на компромисс в настройке интерфейса.*
 
@@ -215,4 +215,4 @@ A: Сначала включите интерфейс командной стр�
 
 - Экспериментальная поддержка жестов построена на [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) и форке [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

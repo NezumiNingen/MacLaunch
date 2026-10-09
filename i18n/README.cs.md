@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **Jazyky**: [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [Русский](README.ru.md) | [हिन्दी](README.hi.md) | [Tiếng Việt](README.vi.md) | [Italiano](README.it.md) | [Čeština](README.cs.md) | [Polski](README.pl.md)
 
@@ -6,25 +6,25 @@
 
 **[Stáhnout zde](https://github.com/NezumiNingen/MacLaunch/releases/latest)** - Získejte nejnovější verzi
 
-🌐 **Web**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **Dokumentace**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **Web**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/) \
+📚 **Dokumentace**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/)
 
-⭐ Zvažte označení hvězdičkou [LaunchNext](https://github.com/RoversX/LaunchNext) a zejména [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
+⭐ Zvažte označení hvězdičkou [MacLaunch](https://github.com/NezumiNingen/MacLaunch) a zejména [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
 
 | | |
 |:---:|:---:|
 | ![](../public/banner.webp) | ![](../public/setting1.webp) |
 | ![](../public/setting2.webp) | ![](../public/setting3.webp) |
 
-macOS Tahoe odstranil launchpad a je tak těžký k použití, nevyužívá vaše Bio GPU, prosím Apple, alespoň dejte lidem možnost přepnout zpět. Než k tomu dojde, zde je LaunchNext
+macOS Tahoe odstranil launchpad a je tak těžký k použití, nevyužívá vaše Bio GPU, prosím Apple, alespoň dejte lidem možnost přepnout zpět. Než k tomu dojde, zde je MacLaunch
 
 *Postaveno na [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) od ggkevinnnn — obrovské díky původnímu projektu!❤️*
 
-*LaunchNow si vybral licenci GPL 3. LaunchNext následuje stejné licenční podmínky.*
+*LaunchNow si vybral licenci GPL 3. MacLaunch následuje stejné licenční podmínky.*
 
 If macOS blocks first launch, open the app once, then choose Open Anyway in System Settings > Privacy & Security.
 
-## Co LaunchNext přináší
+## Co MacLaunch přináší
 
 - ✅ **Import jedním kliknutím ze starého systémového Launchpadu** - přímo čte nativní SQLite databázi Launchpadu a obnovuje složky, pozice aplikací a rozložení
 - ✅ **Ruční organizace aplikací** - přesouvejte aplikace, vytvářejte složky a udržujte rozložení podle sebe
@@ -32,7 +32,7 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Kompaktní a celoobrazovkový režim** - s podporou oddělených nastavení
 - ✅ **Pracovní postup zaměřený na klávesnici** - rychlé vyhledávání, navigace a spouštění
 - ✅ **Podpora CLI / TUI** - kontrolujte a spravujte rozložení z terminálu
-- ✅ **Aktivace přes Hot Corner a nativní gesta** - více způsobů, jak LaunchNext globálně otevřít
+- ✅ **Aktivace přes Hot Corner a nativní gesta** - více způsobů, jak MacLaunch globálně otevřít
 - ✅ **Přetahování aplikací přímo do Docku** - dostupné s renderovacím motorem Core Animation
 - ✅ **Centrum aktualizací s Markdown poznámkami k vydání** - bohatší aktualizace přímo v aplikaci
 - ✅ **Nástroje pro zálohu a obnovení** - bezpečnější export a návrat dat
@@ -52,12 +52,12 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 Data aplikace jsou uložená zde:
 
 ```text
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ## Nativní integrace Launchpadu
 
-LaunchNext může číst přímo ze systémové databáze Launchpadu:
+MacLaunch může číst přímo ze systémové databáze Launchpadu:
 
 ```bash
 /private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db
@@ -105,7 +105,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Začínáme
 
-1. LaunchNext při prvním spuštění naskenuje všechny nainstalované aplikace
+1. MacLaunch při prvním spuštění naskenuje všechny nainstalované aplikace
 2. Importujte staré rozložení Launchpadu nebo začněte s prázdným rozložením
 3. Používejte vyhledávání, klávesnici, drag-and-drop a složky pro organizaci aplikací
 4. Otevřete Nastavení pro konfiguraci enginu, režimu rozložení, aktivace a automatizace
@@ -120,22 +120,22 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 - **Legacy Engine** - zachovává starou renderovací cestu pro maximální kompatibilitu
 - **Next Engine + Core Animation** - doporučeno pro nejlepší celkový zážitek a novější funkce
-- **Kompaktní / Celá obrazovka** - LaunchNext podporuje oba režimy a může uchovávat oddělená nastavení
+- **Kompaktní / Celá obrazovka** - MacLaunch podporuje oba režimy a může uchovávat oddělená nastavení
 
 ## Klíčové funkce
 
 ### Aktivace a vstup
 
-- **Podpora Hot Corner** - otevřete LaunchNext z konfigurovatelného rohu obrazovky
+- **Podpora Hot Corner** - otevřete MacLaunch z konfigurovatelného rohu obrazovky
 - **Experimentální podpora nativních gest** - čtyřprsté pinch / tap akce
-- **Podpora globálních zkratek** - otevřete LaunchNext odkudkoli
+- **Podpora globálních zkratek** - otevřete MacLaunch odkudkoli
 - **Přetažení do Docku** - předávejte aplikace přímo do macOS Docku s Core Animation enginem
 
 ### Automatizace a pokročilý workflow
 
 - **Podpora CLI / TUI** - kontrolujte rozložení, vyhledávejte aplikace, vytvářejte složky, přesouvejte aplikace a automatizujte workflow
 - **Workflow vhodný pro agenty** - funguje dobře s AI agenty v terminálu a shell automatizací
-- **Povolení příkazové řádky z Nastavení** - můžete nainstalovat nebo odstranit spravovaný příkaz `launchnext`
+- **Povolení příkazové řádky z Nastavení** - můžete nainstalovat nebo odstranit spravovaný příkaz `maclaunch`
 
 ### Aktualizace
 
@@ -152,7 +152,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### Přístupnost a navigace
 
 - **Hlasová odezva** - během navigace oznamuje aplikace a složky
-- **Podpora ovladače** - ovládejte LaunchNext a složky gamepadem
+- **Podpora ovladače** - ovládejte MacLaunch a složky gamepadem
 - **Interakce zaměřená na klávesnici** - rychlé vyhledávání a navigace bez myši
 
 ## Výkon a stabilita
@@ -173,7 +173,7 @@ A: Ujistěte se, že používáte macOS 26 nebo novější, případně odstraň
 A: `Next Engine + Core Animation` je doporučený pro nejlepší zážitek. `Legacy Engine` používejte jen tehdy, pokud opravdu potřebujete starou cestu kompatibility.
 
 **Q: Proč příkaz CLI ještě neexistuje?**  
-A: Nejdřív povolte rozhraní příkazové řádky v Nastavení. LaunchNext za vás může nainstalovat i odstranit spravovaný shim `launchnext`.
+A: Nejdřív povolte rozhraní příkazové řádky v Nastavení. MacLaunch za vás může nainstalovat i odstranit spravovaný shim `maclaunch`.
 
 ## Přispívání
 
@@ -195,13 +195,13 @@ Příspěvky jsou vítány.
 
 ## Budoucnost správy aplikací
 
-Jak se Apple vzdaluje od přizpůsobitelných launcherů aplikací, LaunchNext se snaží zachovat ruční organizaci, uživatelskou kontrolu a rychlý přístup i na moderním macOS.
+Jak se Apple vzdaluje od přizpůsobitelných launcherů aplikací, MacLaunch se snaží zachovat ruční organizaci, uživatelskou kontrolu a rychlý přístup i na moderním macOS.
 
-**LaunchNext** není jen náhrada Launchpadu — je to praktická odpověď na regresi workflow.
+**MacLaunch** není jen náhrada Launchpadu — je to praktická odpověď na regresi workflow.
 
 ---
 
-**LaunchNext** - Získejte zpět kontrolu nad svým spouštěčem aplikací 🚀
+**MacLaunch** - Získejte zpět kontrolu nad svým spouštěčem aplikací 🚀
 
 *Pro uživatele macOS, kteří nechtějí dělat kompromisy v přizpůsobení.*
 
@@ -215,4 +215,4 @@ Jak se Apple vzdaluje od přizpůsobitelných launcherů aplikací, LaunchNext s
 
 - Experimentální podpora gest je postavená na [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) a forku od [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **言語**: [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [Русский](README.ru.md) | [हिन्दी](README.hi.md) | [Tiếng Việt](README.vi.md) | [Italiano](README.it.md) | [Čeština](README.cs.md) | [Polski](README.pl.md)
 
@@ -6,25 +6,25 @@
 
 **[こちらからダウンロード](https://github.com/NezumiNingen/MacLaunch/releases/latest)** - 最新版を入手
 
-🌐 **公式サイト**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **ドキュメント**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **公式サイト**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/) \
+📚 **ドキュメント**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/)
 
-⭐ [LaunchNext](https://github.com/RoversX/LaunchNext) と元プロジェクト [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) へのスターをお願いします！
+⭐ [MacLaunch](https://github.com/NezumiNingen/MacLaunch) と元プロジェクト [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) へのスターをお願いします！
 
 | | |
 |:---:|:---:|
 | ![](../public/banner.webp) | ![](../public/setting1.webp) |
 | ![](../public/setting2.webp) | ![](../public/setting3.webp) |
 
-macOS Tahoe は Launchpad を削除しましたが、新しいインターフェースは使いにくく、Bio GPU を十分に活用できません。Apple よ、せめて元に戻すオプションを提供してください。それまでは、LaunchNext があります。
+macOS Tahoe は Launchpad を削除しましたが、新しいインターフェースは使いにくく、Bio GPU を十分に活用できません。Apple よ、せめて元に戻すオプションを提供してください。それまでは、MacLaunch があります。
 
 *[LaunchNow](https://github.com/ggkevinnnn/LaunchNow)（ggkevinnnn）をベースに開発しました。原プロジェクトに心から感謝します！❤️*
 
-*LaunchNow は GPL 3 ライセンスを選択しており、LaunchNext も同じライセンス条件に従います。*
+*LaunchNow は GPL 3 ライセンスを選択しており、MacLaunch も同じライセンス条件に従います。*
 
 If macOS blocks first launch, open the app once, then choose Open Anyway in System Settings > Privacy & Security.
 
-## LaunchNext が提供するもの
+## MacLaunch が提供するもの
 
 - ✅ **旧システム Launchpad からのワンクリックインポート** - ネイティブ Launchpad SQLite データベースを直接読み取り、フォルダ、アプリ位置、レイアウトを復元
 - ✅ **手動でのアプリ整理** - アプリ移動、フォルダ作成、好みのレイアウト維持が可能
@@ -52,12 +52,12 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 アプリデータは以下に保存されます：
 
 ```text
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ## ネイティブ Launchpad 統合
 
-LaunchNext はシステム Launchpad データベースを直接読み取れます：
+MacLaunch はシステム Launchpad データベースを直接読み取れます：
 
 ```bash
 /private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db
@@ -105,7 +105,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### はじめに
 
-1. LaunchNext は初回起動時にインストール済みアプリをスキャンします
+1. MacLaunch は初回起動時にインストール済みアプリをスキャンします
 2. 旧 Launchpad レイアウトを取り込むか、新規レイアウトから開始します
 3. 検索、キーボード操作、マウスドラッグ、フォルダでアプリを整理します
 4. 設定でエンジン、レイアウトモード、起動方法、自動化を構成します
@@ -126,16 +126,16 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### 起動と入力
 
-- **Hot Corner 対応** - 設定可能な画面コーナーから LaunchNext を起動
+- **Hot Corner 対応** - 設定可能な画面コーナーから MacLaunch を起動
 - **実験的ネイティブジェスチャー対応** - 4 本指 pinch / tap アクション
-- **グローバルショートカット対応** - どこからでも LaunchNext を開ける
+- **グローバルショートカット対応** - どこからでも MacLaunch を開ける
 - **Dock へのドラッグ** - Core Animation エンジンで macOS Dock に直接アプリを渡せる
 
 ### 自動化とパワーユーザー向けワークフロー
 
 - **CLI / TUI 対応** - レイアウト確認、アプリ検索、フォルダ作成、アプリ移動、自動化が可能
 - **agent 向けワークフロー** - ターミナル型 AI agent や shell 自動化と相性が良い
-- **設定からコマンドラインを有効化** - 管理対象 `launchnext` コマンドの追加 / 削除が可能
+- **設定からコマンドラインを有効化** - 管理対象 `maclaunch` コマンドの追加 / 削除が可能
 
 ### 更新体験
 
@@ -152,7 +152,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### アクセシビリティとナビゲーション
 
 - **音声フィードバック対応** - ナビゲーション時にアプリやフォルダ名を読み上げ
-- **コントローラ対応** - ゲームコントローラで LaunchNext とフォルダを操作
+- **コントローラ対応** - ゲームコントローラで MacLaunch とフォルダを操作
 - **キーボード中心の操作** - マウスなしでも高速検索と移動が可能
 
 ## パフォーマンスと安定性
@@ -173,7 +173,7 @@ A: macOS 26 以降であることを確認し、必要なら quarantine を外�
 A: `Next Engine + Core Animation` を推奨します。旧互換パスが必要な場合のみ `Legacy Engine` を使ってください。
 
 **Q: CLI コマンドがまだ使えないのはなぜ？**  
-A: まず設定でコマンドラインインターフェースを有効にしてください。LaunchNext は管理対象の `launchnext` shim を追加 / 削除できます。
+A: まず設定でコマンドラインインターフェースを有効にしてください。MacLaunch は管理対象の `maclaunch` shim を追加 / 削除できます。
 
 ## コントリビューション
 
@@ -195,13 +195,13 @@ A: まず設定でコマンドラインインターフェースを有効にし�
 
 ## アプリ管理の未来
 
-Apple がカスタマイズ可能なランチャーから離れていく中で、LaunchNext は現代 macOS 上でも手動整理、ユーザー制御、高速なアプリアクセスを維持しようとしています。
+Apple がカスタマイズ可能なランチャーから離れていく中で、MacLaunch は現代 macOS 上でも手動整理、ユーザー制御、高速なアプリアクセスを維持しようとしています。
 
-**LaunchNext** は単なる Launchpad の代替ではなく、ワークフローの後退に対する現実的な回答です。
+**MacLaunch** は単なる Launchpad の代替ではなく、ワークフローの後退に対する現実的な回答です。
 
 ---
 
-**LaunchNext** - アプリランチャーの主導権を取り戻す 🚀
+**MacLaunch** - アプリランチャーの主導権を取り戻す 🚀
 
 *カスタマイズを妥協したくない macOS ユーザーのために。*
 
@@ -215,4 +215,4 @@ Apple がカスタマイズ可能なランチャーから離れていく中で�
 
 - 実験的ジェスチャー機能は [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) と [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) の fork をベースにしています。❤️
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

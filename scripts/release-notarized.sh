@@ -22,7 +22,7 @@ LOCAL_INPUT_PATH=""
 
 usage() {
   cat <<'EOF'
-Create a Developer ID-signed, notarized LaunchNext release.
+Create a Developer ID-signed, notarized MacLaunch release.
 
 Usage:
   ./scripts/release-notarized.sh [options]
@@ -233,12 +233,12 @@ if [[ "${MODE}" != "local" ]]; then
   fi
 fi
 
-ARCHIVE_PATH="${RELEASE_ROOT}/LaunchNext.xcarchive"
+ARCHIVE_PATH="${RELEASE_ROOT}/MacLaunch.xcarchive"
 DERIVED_DATA_PATH="${RELEASE_ROOT}/DerivedData"
 EXPORT_PATH="${RELEASE_ROOT}/export"
 DIST_PATH="${RELEASE_ROOT}/dist"
 EXPORT_OPTIONS_PATH="${RELEASE_ROOT}/ExportOptions.plist"
-NOTARY_SUBMISSION_PATH="${RELEASE_ROOT}/LaunchNext-notary-submission.zip"
+NOTARY_SUBMISSION_PATH="${RELEASE_ROOT}/MacLaunch-notary-submission.zip"
 NOTARY_RESULT_PATH="${RELEASE_ROOT}/notary-result.json"
 NOTARY_STATUS_PATH="${RELEASE_ROOT}/notary-status.json"
 NOTARY_LOG_PATH="${RELEASE_ROOT}/notary-log.json"
@@ -296,8 +296,13 @@ if [[ "${MODE}" == "notarize" ]]; then
     -allowProvisioningUpdates
 fi
 
-APP_PATH="${EXPORT_PATH}/LaunchNext.app"
+LEGACY_APP_PATH="${EXPORT_PATH}/LaunchNext.app"
+APP_PATH="${EXPORT_PATH}/MacLaunch.app"
 UPDATER_PATH="${APP_PATH}/Contents/Resources/Updater/SwiftUpdater"
+
+if [[ -d "${LEGACY_APP_PATH}" && ! -e "${APP_PATH}" ]]; then
+  mv "${LEGACY_APP_PATH}" "${APP_PATH}"
+fi
 
 if [[ "${MODE}" == "local" ]]; then
   while [[ "${LOCAL_INPUT_PATH}" == [[:space:]]* ]]; do
@@ -319,13 +324,16 @@ if [[ "${MODE}" == "local" ]]; then
     LOCAL_APP_CANDIDATES=()
     while IFS= read -r -d '' LOCAL_APP_CANDIDATE; do
       LOCAL_APP_CANDIDATES+=("${LOCAL_APP_CANDIDATE}")
-    done < <(find "${LOCAL_EXTRACT_PATH}" -maxdepth 4 -type d -name 'LaunchNext.app' -print0)
+    done < <(find "${LOCAL_EXTRACT_PATH}" -maxdepth 4 -type d \( -name 'MacLaunch.app' -o -name 'LaunchNext.app' \) -print0)
 
     if [[ ${#LOCAL_APP_CANDIDATES[@]} -ne 1 ]]; then
-      echo "error: expected exactly one LaunchNext.app in ${LOCAL_INPUT_PATH}" >&2
+      echo "error: expected exactly one MacLaunch.app or legacy LaunchNext.app in ${LOCAL_INPUT_PATH}" >&2
       exit 1
     fi
 
+    if [[ "$(basename "${LOCAL_APP_CANDIDATES[0]}")" == "LaunchNext.app" ]]; then
+      LOCAL_ZIP_REQUIRES_REPACK="YES"
+    fi
     ditto "${LOCAL_APP_CANDIDATES[0]}" "${APP_PATH}"
     LOCAL_ZIP_SOURCE="${LOCAL_INPUT_PATH}"
   else
@@ -348,7 +356,7 @@ BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${APP_PATH}
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${APP_PATH}/Contents/Info.plist")"
 APP_EXECUTABLE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "${APP_PATH}/Contents/Info.plist")"
 
-if [[ "${BUNDLE_ID}" != "com.roversx.launchnext" ]]; then
+if [[ "${BUNDLE_ID}" != "com.nezuminingen.maclaunch" ]]; then
   echo "error: unexpected bundle identifier: ${BUNDLE_ID}" >&2
   exit 1
 fi
@@ -404,7 +412,7 @@ APP_TEAM_ID="$(printf '%s\n' "${APP_SIGNATURE}" | awk -F= '$1 == "TeamIdentifier
 UPDATER_TEAM_ID="$(printf '%s\n' "${UPDATER_SIGNATURE}" | awk -F= '$1 == "TeamIdentifier" { print $2; exit }')"
 
 if [[ -z "${APP_TEAM_ID}" || -z "${UPDATER_TEAM_ID}" ]]; then
-  echo "error: LaunchNext and SwiftUpdater must both contain a Developer ID team identifier" >&2
+  echo "error: MacLaunch and SwiftUpdater must both contain a Developer ID team identifier" >&2
   exit 1
 fi
 
@@ -414,7 +422,7 @@ if [[ -z "${TEAM_ID}" ]]; then
 fi
 
 if [[ "${APP_TEAM_ID}" != "${TEAM_ID}" ]]; then
-  echo "error: LaunchNext is not signed by expected team ${TEAM_ID}" >&2
+  echo "error: MacLaunch is not signed by expected team ${TEAM_ID}" >&2
   exit 1
 fi
 
@@ -424,7 +432,7 @@ if [[ "${UPDATER_TEAM_ID}" != "${TEAM_ID}" ]]; then
 fi
 
 if [[ "${APP_SIGNATURE}" != *"runtime"* || "${UPDATER_SIGNATURE}" != *"runtime"* ]]; then
-  echo "error: LaunchNext and SwiftUpdater must both use Hardened Runtime" >&2
+  echo "error: MacLaunch and SwiftUpdater must both use Hardened Runtime" >&2
   exit 1
 fi
 
@@ -528,7 +536,7 @@ xcrun stapler validate "${APP_PATH}"
 codesign --verify --deep --strict --verbose=2 "${APP_PATH}"
 spctl --assess --type execute --verbose=4 "${APP_PATH}"
 
-ZIP_NAME="LaunchNext${VERSION}.zip"
+ZIP_NAME="MacLaunch${VERSION}.zip"
 ZIP_PATH="${DIST_PATH}/${ZIP_NAME}"
 CHECKSUMS_PATH="${DIST_PATH}/checksums.txt"
 
@@ -576,7 +584,7 @@ if [[ "$(dirname "${RELEASE_ROOT}")" == "${WORK_PARENT}" ]]; then
     rm -rf -- "${DIST_PATH}"
     mv "${RELEASE_ROOT}" "${BUILD_PATH}"
     RELEASE_ROOT="${BUILD_PATH}"
-    APP_PATH="${BUILD_PATH}/export/LaunchNext.app"
+    APP_PATH="${BUILD_PATH}/export/MacLaunch.app"
   fi
 fi
 ZIP_PATH="${RELEASE_ASSETS_PATH}/${ZIP_NAME}"

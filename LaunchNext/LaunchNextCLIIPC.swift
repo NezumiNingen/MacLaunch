@@ -13,7 +13,7 @@ enum LaunchNextCLIIPCConfig {
                                        create: true) else {
             return nil
         }
-        let directory = caches.appendingPathComponent("LaunchNext", isDirectory: true)
+        let directory = caches.appendingPathComponent("MacLaunch", isDirectory: true)
         if !fm.fileExists(atPath: directory.path) {
             try? fm.createDirectory(at: directory, withIntermediateDirectories: true)
         }
@@ -52,8 +52,8 @@ enum LaunchNextCLIIPCClient {
 
         guard connectSocket(fd: fd, socketPath: socketPath) else {
             return .failure(
-                "Please launch LaunchNext GUI first.\n" +
-                "Run: open -a LaunchNext\n" +
+                "Please launch MacLaunch first.\n" +
+                "Run: open -a MacLaunch\n" +
                 "Make sure \"Command line interface\" is ON in General settings."
             )
         }
@@ -168,7 +168,7 @@ final class LaunchNextCLIIPCServer {
 
     private let socketPath: String
     private let commandHandler: CommandHandler
-    private let queue = DispatchQueue(label: "io.roversx.launchnext.cli.ipc")
+    private let queue = DispatchQueue(label: "io.nezuminingen.maclaunch.cli.ipc")
 
     private var listeningFD: Int32 = -1
     private var acceptSource: DispatchSourceRead?

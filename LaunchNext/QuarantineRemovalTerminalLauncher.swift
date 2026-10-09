@@ -58,7 +58,7 @@ enum QuarantineRemovalTerminalLauncher {
         }
 
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("LaunchNext-Quarantine-\(UUID().uuidString)")
+            .appendingPathComponent("MacLaunch-Quarantine-\(UUID().uuidString)")
             .appendingPathExtension("command")
         let commandText = command(for: validatedURL)
         let script = """

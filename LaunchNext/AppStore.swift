@@ -367,7 +367,7 @@ final class AppStore: ObservableObject {
 
     static let customTitlesKey = "customAppTitles"
     static let hiddenAppsKey = "hiddenAppBundlePaths"
-    static let legacyPreferencesDomain = "LaunchNext"
+    static let legacyPreferencesDomains = ["com.roversx.launchnext", "LaunchNext"]
     private static let legacyPreferencesMigrationKey = "didMigratePreferencesFromLaunchNextBundleID"
     static let gridColumnsKey = "gridColumnsPerPage"
     static let gridRowsKey = "gridRowsPerPage"
@@ -419,9 +419,10 @@ final class AppStore: ObservableObject {
     static let gestureSelectedDeviceIDsKey = "gestureSelectedDeviceIDs"
     static let gestureShowAllInputDevicesKey = "gestureShowAllInputDevices"
     static let searchDebounceMillisecondsRange: ClosedRange<Double> = 100...600
-    private static let cliShimMarker = "# LaunchNext CLI shim"
-    private static let cliPathSnippetHeader = "# >>> LaunchNext CLI >>>"
-    private static let cliPathSnippetFooter = "# <<< LaunchNext CLI <<<"
+    private static let cliShimMarker = "# MacLaunch CLI shim"
+    private static let legacyCLIShimMarker = "# LaunchNext CLI shim"
+    private static let cliPathSnippetHeader = "# >>> MacLaunch CLI >>>"
+    private static let cliPathSnippetFooter = "# <<< MacLaunch CLI <<<"
     static let backgroundStyleKey = "launchpadBackgroundStyle"
     static let backgroundImageEnabledKey = "launchpadBackgroundImageEnabled"
     static let backgroundImageSourceKey = "launchpadBackgroundImageSource"
@@ -463,14 +464,16 @@ final class AppStore: ObservableObject {
     ) {
         guard let currentDomain,
               !currentDomain.isEmpty,
-              currentDomain != legacyPreferencesDomain else { return }
+              !legacyPreferencesDomains.contains(currentDomain) else { return }
 
         var currentPreferences = defaults.persistentDomain(forName: currentDomain) ?? [:]
         guard currentPreferences[legacyPreferencesMigrationKey] as? Bool != true else { return }
 
-        if let legacyPreferences = defaults.persistentDomain(forName: legacyPreferencesDomain) {
-            for (key, value) in legacyPreferences where currentPreferences[key] == nil {
-                currentPreferences[key] = value
+        for legacyDomain in legacyPreferencesDomains {
+            if let legacyPreferences = defaults.persistentDomain(forName: legacyDomain) {
+                for (key, value) in legacyPreferences where currentPreferences[key] == nil {
+                    currentPreferences[key] = value
+                }
             }
         }
 
@@ -592,8 +595,8 @@ final class AppStore: ObservableObject {
     private static let defaultLaunchpadOpenSound = "Submarine"
     private static let defaultLaunchpadCloseSound = "Glass"
     private static let defaultNavigationSound = "Tink"
-    fileprivate static let updateNotificationCategoryIdentifier = "launchnext.update.category"
-    fileprivate static let updateNotificationDownloadActionIdentifier = "launchnext.update.download"
+    fileprivate static let updateNotificationCategoryIdentifier = "maclaunch.update.category"
+    fileprivate static let updateNotificationDownloadActionIdentifier = "maclaunch.update.download"
     private var hasConfiguredUpdateNotifications = false
 
     private var lastUpdateCheck: Date? {
@@ -1199,7 +1202,7 @@ final class AppStore: ObservableObject {
                     try SMAppService.mainApp.unregister()
                 }
             } catch {
-                NSLog("LaunchNext: Failed to update login item setting - %@", error.localizedDescription)
+                NSLog("MacLaunch: Failed to update login item setting - %@", error.localizedDescription)
                 isStartOnLogin = oldValue
             }
         }
@@ -3244,6 +3247,11 @@ final class AppStore: ObservableObject {
 
     private func installCLICommandIfNeeded() {
         guard let executablePath = Bundle.main.executableURL?.path else { return }
+        for path in legacyCLICommandTargets() {
+            let directory = (path as NSString).deletingLastPathComponent
+            _ = uninstallCLIShim(at: path)
+            _ = removeCLIPathSnippetFromZProfile(directory: directory)
+        }
         for path in cliCommandTargets() {
             if installCLIShim(at: path, executablePath: executablePath) {
                 let directory = (path as NSString).deletingLastPathComponent
@@ -3259,6 +3267,16 @@ final class AppStore: ObservableObject {
     }
 
     private func cliCommandTargets() -> [String] {
+        let homePath = FileManager.default.homeDirectoryForCurrentUser.path
+        return [
+            "/opt/homebrew/bin/maclaunch",
+            "/usr/local/bin/maclaunch",
+            "\(homePath)/.local/bin/maclaunch",
+            "\(homePath)/bin/maclaunch"
+        ]
+    }
+
+    private func legacyCLICommandTargets() -> [String] {
         let homePath = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "/opt/homebrew/bin/launchnext",
@@ -3304,21 +3322,21 @@ final class AppStore: ObservableObject {
         
         if [[ "$1" == "--help" || "$1" == "-h" || "$1" == "help" ]]; then
           cat <<'EOF'
-        LaunchNext CLI
+        MacLaunch CLI
         
         Usage:
-          launchnext --help
-          launchnext --gui
-          launchnext --tui
-          launchnext --cli help
-          launchnext --cli list
-          launchnext --cli snapshot
-          launchnext --cli search --query "safari"
-          launchnext --cli move --source normal-app --path "/Applications/Thaw.app" --to folder-append --target-folder-id <folder-id>
+          maclaunch --help
+          maclaunch --gui
+          maclaunch --tui
+          maclaunch --cli help
+          maclaunch --cli list
+          maclaunch --cli snapshot
+          maclaunch --cli search --query "safari"
+          maclaunch --cli move --source normal-app --path "/Applications/Thaw.app" --to folder-append --target-folder-id <folder-id>
         
         Notes:
           - Keep `--cli --help` and `--cli help` for full in-app CLI help.
-          - LaunchNext GUI must be running for list/snapshot/search/move.
+          - MacLaunch must be running for list/snapshot/search/move.
           - "Command line interface" must be ON in General settings.
         EOF
           exit 0
@@ -3339,7 +3357,7 @@ final class AppStore: ObservableObject {
     @discardableResult
     private func uninstallCLICommandIfNeeded() -> Bool {
         var removedAny = false
-        for path in cliCommandTargets() {
+        for path in cliCommandTargets() + legacyCLICommandTargets() {
             let directory = (path as NSString).deletingLastPathComponent
             if uninstallCLIShim(at: path) { removedAny = true }
             if removeCLIPathSnippetFromZProfile(directory: directory) { removedAny = true }
@@ -3353,11 +3371,12 @@ final class AppStore: ObservableObject {
 
         let isManagedShim: Bool = {
             if let existing = try? String(contentsOfFile: shimPath, encoding: .utf8),
-               existing.contains(Self.cliShimMarker) {
+               existing.contains(Self.cliShimMarker) || existing.contains(Self.legacyCLIShimMarker) {
                 return true
             }
             if let destination = try? fileManager.destinationOfSymbolicLink(atPath: shimPath),
-               destination.contains("/LaunchNext.app/Contents/MacOS/LaunchNext") {
+               destination == Bundle.main.executableURL?.path ||
+                destination.contains("/LaunchNext.app/Contents/MacOS/LaunchNext") {
                 return true
             }
             return false
@@ -3398,6 +3417,7 @@ final class AppStore: ObservableObject {
 
         var updated = existing
         updated = updated.replacingOccurrences(of: cliPathSnippet(directory: directory), with: "")
+        updated = updated.replacingOccurrences(of: previousManagedCLIPathSnippet(directory: directory), with: "")
         updated = updated.replacingOccurrences(of: legacyCLIPathSnippet(directory: directory), with: "")
 
         guard updated != existing else { return false }
@@ -3422,11 +3442,22 @@ final class AppStore: ObservableObject {
 
     private func legacyCLIPathSnippet(directory: String) -> String {
         """
-        
+
         # LaunchNext CLI
         if [[ ":$PATH:" != *":\(directory):"* ]]; then
           export PATH="\(directory):$PATH"
         fi
+        """
+    }
+
+    private func previousManagedCLIPathSnippet(directory: String) -> String {
+        """
+
+        # >>> LaunchNext CLI >>>
+        if [[ ":$PATH:" != *":\(directory):"* ]]; then
+          export PATH="\(directory):$PATH"
+        fi
+        # <<< LaunchNext CLI <<<
         """
     }
 
@@ -5477,22 +5508,22 @@ final class AppStore: ObservableObject {
     // MARK: - 持久化：每页独立排序（新）+ 兼容旧版
     func loadAllOrder() {
         guard let modelContext else {
-            print("LaunchNext: ModelContext is nil, cannot load persisted order")
+            print("MacLaunch: ModelContext is nil, cannot load persisted order")
             return
         }
         
-        print("LaunchNext: Attempting to load persisted order data...")
+        print("MacLaunch: Attempting to load persisted order data...")
         
         // 优先尝试从新的"页-槽位"模型读取
         if loadOrderFromPageEntries(using: modelContext) {
-            print("LaunchNext: Successfully loaded order from PageEntryData")
+            print("MacLaunch: Successfully loaded order from PageEntryData")
             return
         }
         
-        print("LaunchNext: PageEntryData not found, trying legacy TopItemData...")
+        print("MacLaunch: PageEntryData not found, trying legacy TopItemData...")
         // 回退：旧版全局顺序模型
         loadOrderFromLegacyTopItems(using: modelContext)
-        print("LaunchNext: Finished loading order from legacy data")
+        print("MacLaunch: Finished loading order from legacy data")
     }
 
     private func loadOrderFromPageEntries(using modelContext: ModelContext) -> Bool {
@@ -5787,22 +5818,22 @@ final class AppStore: ObservableObject {
 
     func saveAllOrder() {
         guard let modelContext else {
-            print("LaunchNext: ModelContext is nil, cannot save order")
+            print("MacLaunch: ModelContext is nil, cannot save order")
             return
         }
         removeDuplicateAppReferencesBeforeSaving()
         reconcileFolderQuickLaunchPinsInCurrentLayout()
         guard !items.isEmpty else {
-            print("LaunchNext: Items list is empty, skipping save")
+            print("MacLaunch: Items list is empty, skipping save")
             return
         }
 
-        print("LaunchNext: Saving order data for \(items.count) items...")
+        print("MacLaunch: Saving order data for \(items.count) items...")
         
         // 写入新模型：按页-槽位
         do {
             let existing = try modelContext.fetch(FetchDescriptor<PageEntryData>())
-            print("LaunchNext: Found \(existing.count) existing entries, clearing...")
+            print("MacLaunch: Found \(existing.count) existing entries, clearing...")
             for row in existing { modelContext.delete(row) }
 
             // 构建 folders 查找表
@@ -5860,7 +5891,7 @@ final class AppStore: ObservableObject {
                 }
             }
             try modelContext.save()
-            print("LaunchNext: Successfully saved order data")
+            print("MacLaunch: Successfully saved order data")
             
             // 清理旧版表，避免占用空间（忽略错误）
             do {
@@ -5869,7 +5900,7 @@ final class AppStore: ObservableObject {
                 try? modelContext.save()
             } catch { }
         } catch {
-            print("LaunchNext: Error saving order data: \(error)")
+            print("MacLaunch: Error saving order data: \(error)")
         }
     }
 
@@ -6356,7 +6387,7 @@ final class AppStore: ObservableObject {
     
     /// 手动刷新（模拟全新启动的完整流程）
     func refresh() {
-        print("LaunchNext: Manual refresh triggered")
+        print("MacLaunch: Manual refresh triggered")
 
         // 重置界面与状态，使之接近"首次启动"
         openFolder = nil
@@ -6888,7 +6919,7 @@ final class AppStore: ObservableObject {
             if success {
                 workspace.noteFileSystemChanged(bundlePath)
             } else {
-                NSLog("LaunchNext: Failed to update application bundle icon at %@", bundlePath)
+                NSLog("MacLaunch: Failed to update application bundle icon at %@", bundlePath)
             }
         }
     }
@@ -6929,15 +6960,33 @@ final class AppStore: ObservableObject {
     }
 
     private static func ensureAppSupportDirectory() -> URL {
-        let fm = FileManager.default
-        if let base = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true) {
-            let dir = base.appendingPathComponent("LaunchNext", isDirectory: true)
-            if !fm.fileExists(atPath: dir.path) {
-                try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
-            }
-            return dir
-        }
+        if let directory = try? applicationSupportDirectoryURL() { return directory }
         return URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+    }
+
+    static func applicationSupportDirectoryURL() throws -> URL {
+        let fileManager = FileManager.default
+        let base = try fileManager.url(for: .applicationSupportDirectory,
+                                       in: .userDomainMask,
+                                       appropriateFor: nil,
+                                       create: true)
+        let directory = base.appendingPathComponent("MacLaunch", isDirectory: true)
+        let legacyDirectory = base.appendingPathComponent("LaunchNext", isDirectory: true)
+
+        if !fileManager.fileExists(atPath: directory.path),
+           fileManager.fileExists(atPath: legacyDirectory.path) {
+            do {
+                try fileManager.moveItem(at: legacyDirectory, to: directory)
+            } catch {
+                // Keep using the original data if a safe first-run move is unavailable.
+                return legacyDirectory
+            }
+        }
+
+        if !fileManager.fileExists(atPath: directory.path) {
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
+        return directory
     }
 
     private static var customIconFileURL: URL {
@@ -7640,7 +7689,7 @@ final class AppStore: ObservableObject {
         enqueueUpdateNotification(
             title: localized(.updateAvailable),
             body: "\(localized(.newVersion)) 9.9.9-test",
-            releaseURL: URL(string: "https://closex.org/launchnext/")
+            releaseURL: URL(string: "https://github.com/NezumiNingen/MacLaunch/releases/latest")
         )
     }
 
@@ -7708,12 +7757,13 @@ final class AppStore: ObservableObject {
 
     @MainActor
     func openUpdaterConfigFile() {
-        let fm = FileManager.default
-        let baseDirectory = fm.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library")
-            .appendingPathComponent("Application Support")
-            .appendingPathComponent("LaunchNext")
+        let baseDirectory = (try? Self.applicationSupportDirectoryURL())?
             .appendingPathComponent("updates", isDirectory: true)
+        guard let baseDirectory else {
+            presentUpdateFailureAlert(localized(.updateCheckFailed))
+            return
+        }
+        let fm = FileManager.default
         let configURL = baseDirectory.appendingPathComponent("config.json", isDirectory: false)
         let supportedLanguages = ["de", "en", "es", "fr", "it", "hi", "ja", "ko", "pl", "ru", "vi", "zh", "zh-Hant"]
         let defaultConfig: [String: Any] = [
@@ -7781,7 +7831,7 @@ final class AppStore: ObservableObject {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
 
-        let assetPattern = "LaunchNext.*\\.zip"
+        let assetPattern = "(?:MacLaunch|LaunchNext).*\\.zip"
         let bundlePath = Bundle.main.bundlePath
 
         var arguments: [String] = ["-na", "Terminal", "--args", updaterURL.path]

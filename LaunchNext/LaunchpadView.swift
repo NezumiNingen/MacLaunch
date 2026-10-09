@@ -251,6 +251,7 @@ struct LaunchpadView: View {
     @State private var autoOrganizeButtonFrameInWindow: CGRect = .zero
     @State private var backgroundButtonFrameInWindow: CGRect = .zero
     @State private var showBackgroundOptions = false
+    @State private var openSettingsToShortcutSection = false
     @State private var pageControlButtonIsPressed = false
     @State private var pageControlButtonPressID = UUID()
     @State private var autoOrganizationFeedback: String?
@@ -429,8 +430,11 @@ struct LaunchpadView: View {
 
     private var launchpadEventBoundView: some View {
         launchpadBaseView
-        .sheet(isPresented: $appStore.isSetting) {
-            SettingsView(appStore: appStore)
+        .sheet(isPresented: $appStore.isSetting, onDismiss: {
+            openSettingsToShortcutSection = false
+        }) {
+            SettingsView(appStore: appStore,
+                         openShortcutSettings: openSettingsToShortcutSection)
         }
         .onChange(of: appStore.followScrollPagingEnabled) { _, _ in
             if scrollState.followOffset != 0 || scrollState.accumulatedX != 0 || scrollState.isUserSwiping {
@@ -1471,7 +1475,16 @@ struct LaunchpadView: View {
         if appStore.shouldShowOnboarding {
             let compactOnboardingLayout = geo.size.width < 960
             return AnyView(
-                FirstLaunchOnboardingPanel(appStore: appStore, compactLayout: compactOnboardingLayout)
+                FirstLaunchOnboardingPanel(
+                    appStore: appStore,
+                    compactLayout: compactOnboardingLayout,
+                    onOpenShortcutSettings: {
+                        DispatchQueue.main.async {
+                            openSettingsToShortcutSection = true
+                            appStore.isSetting = true
+                        }
+                    }
+                )
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .padding(.top, max(8, actualTopPadding))
                     .padding(.bottom, max(12, actualBottomPadding))
@@ -2022,6 +2035,7 @@ struct LaunchpadView: View {
 private struct FirstLaunchOnboardingPanel: View {
     @ObservedObject var appStore: AppStore
     let compactLayout: Bool
+    let onOpenShortcutSettings: () -> Void
     @State private var currentStep: Int = 0
     @State private var movingForward: Bool = true
     @State private var isImportingSystem = false
@@ -2057,11 +2071,7 @@ private struct FirstLaunchOnboardingPanel: View {
         .frame(maxWidth: compactLayout ? 680 : 760, alignment: .leading)
         .task {
             evaluateNativeImportAvailabilityIfNeeded()
-        }
-        .onChange(of: currentStep) { _, step in
-            if step == 1 {
-                triggerBackgroundPreparationIfNeeded()
-            }
+            triggerBackgroundPreparationIfNeeded()
         }
     }
 
@@ -2183,18 +2193,6 @@ private struct FirstLaunchOnboardingPanel: View {
         }
     }
 
-    private var welcomeStep: some View {
-        stepCard(title: appStore.localized(.onboardingFlowIntroTitle),
-                 subtitle: appStore.localized(.onboardingFlowIntroSubtitle),
-                 icon: "sparkles") {
-            VStack(alignment: .leading, spacing: 10) {
-                introItem(icon: "square.and.arrow.down", text: appStore.localized(.onboardingFlowIntroImportItem))
-                introItem(icon: "square.grid.3x3", text: appStore.localized(.onboardingFlowIntroPresetItem))
-                introItem(icon: "command", text: appStore.localized(.onboardingFlowIntroShortcutItem))
-            }
-        }
-    }
-
     private var setupChoiceStep: some View {
         stepCard(title: appStore.localized(.onboardingFlowLayoutStepTitle),
                  subtitle: appStore.localized(.onboardingFlowLayoutStepSubtitle),
@@ -2231,7 +2229,7 @@ private struct FirstLaunchOnboardingPanel: View {
                 HStack {
                     Spacer()
                     Button(appStore.localized(.onboardingFlowLayoutSkipButton)) {
-                        goToStep(2)
+                        goToStep(1)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
@@ -2247,9 +2245,7 @@ private struct FirstLaunchOnboardingPanel: View {
                  subtitle: appStore.localized(.onboardingFlowShortcutStepSubtitle),
                  icon: "command.circle.fill") {
             Button(appStore.localized(.onboardingFlowShortcutStepButton)) {
-                DispatchQueue.main.async {
-                    appStore.isSetting = true
-                }
+                onOpenShortcutSettings()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -2386,12 +2382,10 @@ private struct FirstLaunchOnboardingPanel: View {
         Group {
             switch step {
             case 0:
-                welcomeStep
-            case 1:
                 setupChoiceStep
-            case 2:
+            case 1:
                 shortcutStep
-            case 3:
+            case 2:
                 completionStep
             default:
                 completionStep
@@ -2414,18 +2408,6 @@ private struct FirstLaunchOnboardingPanel: View {
         )
     }
 
-    private func introItem(icon: String, text: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(accentBlue)
-
-            Text(text)
-                .font(.subheadline)
-                .foregroundColor(Color(nsColor: .secondaryLabelColor))
-        }
-    }
-
     private func stepSymbol(icon: String) -> some View {
         Image(systemName: icon)
             .font(.system(size: compactLayout ? 42 : 54, weight: .light))
@@ -2436,9 +2418,8 @@ private struct FirstLaunchOnboardingPanel: View {
 
     private var heroSymbolName: String {
         switch currentStep {
-        case 0: return "sparkles"
-        case 1: return "square.grid.3x3"
-        case 2: return "command"
+        case 0: return "square.grid.3x3"
+        case 1: return "command"
         default: return "sparkles"
         }
     }
@@ -2465,15 +2446,13 @@ private struct FirstLaunchOnboardingPanel: View {
 
     private var primaryActionTitle: String {
         if isAtLastVisibleStep { return appStore.localized(.onboardingFlowDone) }
-        if currentStep == 0 { return appStore.localized(.onboardingFlowStart) }
         return appStore.localized(.onboardingFlowNext)
     }
 
     private func sidebarTitle(for step: Int) -> String {
         switch step {
-        case 0: return appStore.localized(.onboardingFlowSidebarStart)
-        case 1: return appStore.localized(.onboardingFlowSidebarLayout)
-        case 2: return appStore.localized(.onboardingFlowSidebarShortcut)
+        case 0: return appStore.localized(.onboardingFlowSidebarLayout)
+        case 1: return appStore.localized(.onboardingFlowSidebarShortcut)
         default: return appStore.localized(.onboardingFlowSidebarDone)
         }
     }
@@ -2484,7 +2463,7 @@ private struct FirstLaunchOnboardingPanel: View {
     }
 
     private var visibleStepSequence: [Int] {
-        [0, 1, 2, 3]
+        [0, 1, 2]
     }
 
     private var visibleStepPosition: Int {
@@ -2545,12 +2524,12 @@ private struct FirstLaunchOnboardingPanel: View {
 
     private var shouldShowStepSidebar: Bool { currentStep != lastStep }
     private var stepContentHeight: CGFloat {
-        if currentStep == 1 {
+        if currentStep == 0 {
             return compactLayout ? 360 : 390
         }
         return compactLayout ? 250 : 290
     }
-    private var lastStep: Int { 3 }
+    private var lastStep: Int { 2 }
     private var isBusy: Bool { isImportingSystem || isApplyingPreset }
 
     private struct StepMotionModifier: ViewModifier {
@@ -2574,7 +2553,7 @@ private struct FirstLaunchOnboardingPanel: View {
                 statusIsError = !result.success
                 isImportingSystem = false
                 if result.success {
-                    goToStep(2)
+                    goToStep(1)
                 }
             }
         }
@@ -2588,7 +2567,7 @@ private struct FirstLaunchOnboardingPanel: View {
         statusIsError = !success
         isApplyingPreset = false
         if success {
-            goToStep(2)
+            goToStep(1)
         }
     }
 }

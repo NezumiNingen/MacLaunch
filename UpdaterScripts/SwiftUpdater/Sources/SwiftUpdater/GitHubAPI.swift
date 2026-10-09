@@ -25,8 +25,8 @@ struct ReleaseMetadata: Decodable {
 }
 
 enum GitHubClient {
-    static let owner = "RoversX"
-    static let repo = "LaunchNext"
+    static let owner = "NezumiNingen"
+    static let repo = "MacLaunch"
 
     static func releaseAPIURL(tag: String?, repositoryOwner: String?, repositoryName: String?) -> URL? {
         let owner = repositoryOwner ?? Self.owner

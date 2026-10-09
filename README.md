@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **Languages**: [English](README.md) | [简体中文](i18n/README.zh.md) | [繁體中文](i18n/README.zh-TW.md) | [日本語](i18n/README.ja.md) | [한국어](i18n/README.ko.md) | [Français](i18n/README.fr.md) | [Español](i18n/README.es.md) | [Deutsch](i18n/README.de.md) | [Русский](i18n/README.ru.md) | [हिन्दी](i18n/README.hi.md) | [Tiếng Việt](i18n/README.vi.md) | [Italiano](i18n/README.it.md) | [Čeština](i18n/README.cs.md) | [Polski](i18n/README.pl.md)
 
@@ -6,23 +6,23 @@
 
 **[Download here](https://github.com/NezumiNingen/MacLaunch/releases/latest)** - Get the latest release
 
-MacLaunch is a community customization of [RoversX/LaunchNext](https://github.com/RoversX/LaunchNext), adding automatic app organization, folders, multi-page drag and drop, Liquid Glass-inspired controls, and this repository's update channel.
+MacLaunch is maintained by NezumiNingen and is a community fork based on [RoversX/LaunchNext](https://github.com/RoversX/LaunchNext) and [LaunchNow](https://github.com/ggkevinnnn/LaunchNow). This fork adds automatic app organization, folders, multi-page drag and drop, Liquid Glass-inspired controls, and its own update channel. Original copyright notices and the GPL-3.0 license are retained.
 
-🌐 **Website**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **Docs**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **Project**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch) \
+📚 **Documentation**: [Installation and usage](#installation)
 
-⭐ Consider starring [LaunchNext](https://github.com/RoversX/LaunchNext) and especially [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
+⭐ Consider starring [MacLaunch](https://github.com/NezumiNingen/MacLaunch) and especially [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
 
 | | |
 |:---:|:---:|
 | ![](./public/banner.webp) | ![](./public/setting1.webp) |
 | ![](./public/setting2.webp) | ![](./public/setting3.webp) |
 
-MacOS Tahoe removed launchpad,and it's so hard to use, it's doesn't use your Bio GPU, please apple, at least give people an option to switch back. Before that, here is LaunchNext
+macOS Tahoe removed Launchpad, leaving fewer ways to organize and open apps. MacLaunch brings a customizable launcher back.
 
 *Built upon [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) by ggkevinnnn - huge thanks to the original project!❤️*
 
-*LaunchNow has chosen the GPL 3 license. LaunchNext follows the same licensing terms.*
+*MacLaunch is distributed under the GNU GPL-3.0 license. The upstream copyright and license notices remain in the source.*
 
 ### Install and update
 
@@ -30,7 +30,7 @@ Download MacLaunch from the Releases link above. The app checks for updates in t
 
 Building from source? See [Configure local code signing](#configure-local-code-signing).
 
-### What LaunchNext Delivers
+### What MacLaunch Delivers
 - ✅ **One-click import from old system Launchpad** - directly reads your native Launchpad SQLite database (`/private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db`) to perfectly recreate your existing folders, app positions, and layout
 - ✅ **Classic Launchpad experience** - works exactly like the beloved original interface
 - ✅ **Multi-language support** - full internationalization with English, Simplified Chinese, Traditional Chinese, Japanese, French, Spanish, German, Russian, and more
@@ -39,7 +39,7 @@ Building from source? See [Configure local code signing](#configure-local-code-s
 - ✅ **Smart folder management** - create and organize folders just like before
 - ✅ **Fuzzy search and keyboard navigation** - find apps quickly, even with partial or imperfect input
 - ✅ **CLI / TUI support** - inspect and operate your layout from the terminal
-- ✅ **Hot Corner and native gesture support** - open LaunchNext with corners, trackpad gestures, and 4 / 5 finger options
+- ✅ **Hot Corner and native gesture support** - open MacLaunch with corners, trackpad gestures, and 4 / 5 finger options
 - ✅ **Drag apps directly to the Dock** - available in Next Engine + Core Animation
 - ✅ **Core Animation folders** - folder content supports paged and vertical scroll layouts
 - ✅ **Better context menus** - Show in Finder, Copy App Path, Rename Folder, and configured uninstall actions
@@ -57,7 +57,7 @@ Building from source? See [Configure local code signing](#configure-local-code-s
 ### Data Storage
 Application data is safely stored in:
 ```
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ### Native Launchpad Integration
@@ -87,14 +87,14 @@ Reads directly from the system Launchpad database:
    ```
 
 3. <a name="configure-local-code-signing"></a>**Configure local code signing**
-   - A paid Apple Developer membership is not required to build or contribute to LaunchNext.
+   - A paid Apple Developer membership is not required to build or contribute to MacLaunch.
    - Select the **LaunchNext target**, open **Signing & Capabilities**, set **Team** to `None`, and select `Sign to Run Locally` as the signing certificate.
    - Keep Hardened Runtime enabled.
    - Xcode may mark the project file as modified after changing these local settings. Do not include signing-only changes in a pull request.
 
-   | **Xcode local signing settings for LaunchNext** | **Signed and notarized LaunchNext release** |
+   | **Xcode local signing settings for MacLaunch** | **Signed and notarized MacLaunch release** |
    | :---: | :---: |
-   | <img src="./public/local-code-signing.png" alt="Xcode local signing settings for LaunchNext" width="620"> | <img src="./public/notarized-release-status.png" alt="Signed and notarized LaunchNext release status" width="300"> |
+   | <img src="./public/local-code-signing.png" alt="Xcode local signing settings for MacLaunch" width="620"> | <img src="./public/notarized-release-status.png" alt="Signed and notarized MacLaunch release status" width="300"> |
 
 4. **Build and run**
    - To launch the app with `⌘+R`, select `My Mac` as the run destination—not `Any Mac`.
@@ -116,7 +116,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ## Usage
 
 ### Getting Started
-1. **First Launch**: LaunchNext automatically scans all installed applications
+1. **First Launch**: MacLaunch automatically scans all installed applications
 2. **Select**: Click to select apps, double-click to launch
 3. **Search**: Type to instantly filter applications
 4. **Organize**: Drag apps to create folders and custom layouts
@@ -132,7 +132,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 - **Compact**: Floating window with rounded corners
 - **Fullscreen**: Full-screen mode for maximum visibility
 - **Legacy Engine** and **Next Engine + Core Animation** are available in Settings
-- LaunchNext can keep separate settings for fullscreen and compact
+- MacLaunch can keep separate settings for fullscreen and compact
 - Optional fullscreen menu bar hiding is available; macOS also hides the Dock when this is enabled
 
 ## Advanced Features
@@ -154,8 +154,8 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 - **Background Scanning**: Non-blocking app discovery
 
 ### Automation and Activation
-- **CLI / TUI**: Manage LaunchNext from the terminal
-- **Hot Corner**: Open LaunchNext from a configurable screen corner
+- **CLI / TUI**: Manage MacLaunch from the terminal
+- **Hot Corner**: Open MacLaunch from a configurable screen corner
 - **Experimental native gestures**: 4 / 5 finger pinch and tap actions, including external trackpad device selection
 - **Dock drag**: Drag apps directly into the macOS Dock in Next Engine + Core Animation
 
@@ -183,7 +183,7 @@ A: Ensure macOS 26.0+ and check system permissions.
 A: `Next Engine + Core Animation` is recommended for the best experience. `Legacy Engine` is still available if you need the older compatibility path.
 
 **Q: Why doesn't the CLI command exist yet?**
-A: Enable the command line interface in Settings first. LaunchNext can install and remove the managed `launchnext` command for you.
+A: Enable the command line interface in Settings first. MacLaunch can install and remove the managed `maclaunch` command for you. Existing managed `launchnext` shims are cleaned up when the CLI is enabled or removed.
 
 ## Contributing
 
@@ -217,14 +217,14 @@ xcodebuild test -scheme LaunchNext -destination 'platform=macOS'
 
 ## The Future of App Management
 
-As Apple moves away from customizable interfaces, LaunchNext represents a push toward user control and personalization. I still hope Apple brings Launchpad back.
+As Apple moves away from customizable interfaces, MacLaunch represents a push toward user control and personalization. I still hope Apple brings Launchpad back.
 
-**LaunchNext** isn't just a Launchpad replacement—it's a statement that user choice matters.
+**MacLaunch** isn't just a Launchpad replacement—it's a statement that user choice matters.
 
 
 ---
 
-**LaunchNext** - Reclaim Your App Launcher 🚀
+**MacLaunch** - Reclaim Your App Launcher 🚀
 
 *Built for macOS users who refuse to compromise on customization.*
 
@@ -241,4 +241,4 @@ As Apple moves away from customizable interfaces, LaunchNext represents a push t
 - Experimental gesture support is built on [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) and the fork by [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

@@ -51,6 +51,7 @@ BUILT_PRODUCTS_DIR="$(xcodebuild \
 APP_PATH="${BUILT_PRODUCTS_DIR}/LaunchNext.app"
 BUILD_DIR="$(cd "${BUILT_PRODUCTS_DIR}/../.." && pwd)"
 RELEASE_DIR="${BUILD_DIR}/dist"
+PACKAGED_APP_PATH="${RELEASE_DIR}/MacLaunch.app"
 
 rm -rf "${RELEASE_DIR}"
 mkdir -p "${RELEASE_DIR}"
@@ -66,11 +67,12 @@ if [[ -z "${VERSION}" ]]; then
   exit 1
 fi
 
-ZIP_NAME="LaunchNext${VERSION}.zip"
+ZIP_NAME="MacLaunch${VERSION}.zip"
 ZIP_PATH="${RELEASE_DIR}/${ZIP_NAME}"
 CHECKSUMS_PATH="${RELEASE_DIR}/checksums.txt"
 
-ditto -c -k --sequesterRsrc --keepParent "${APP_PATH}" "${ZIP_PATH}"
+ditto "${APP_PATH}" "${PACKAGED_APP_PATH}"
+ditto -c -k --sequesterRsrc --keepParent "${PACKAGED_APP_PATH}" "${ZIP_PATH}"
 
 (
   cd "${RELEASE_DIR}"
@@ -80,7 +82,7 @@ ditto -c -k --sequesterRsrc --keepParent "${APP_PATH}" "${ZIP_PATH}"
 SHA256="$(awk '{print $1}' "${CHECKSUMS_PATH}")"
 
 echo "Release artifacts:"
-echo "  App: ${APP_PATH}"
+echo "  App: ${PACKAGED_APP_PATH}"
 echo "  ${ZIP_PATH}"
 echo "  ${CHECKSUMS_PATH}"
 echo ""

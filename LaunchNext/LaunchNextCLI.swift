@@ -106,7 +106,7 @@ enum LaunchNextCLI {
             case "move":
                 return runMove(commandArguments: parsed.commandArguments, context: context)
             default:
-                fputs("LaunchNext CLI: command not implemented yet.\n", stderr)
+                fputs("MacLaunch CLI: command not implemented yet.\n", stderr)
                 printHelp()
                 return 1
             }
@@ -115,28 +115,28 @@ enum LaunchNextCLI {
 
     static func printHelp() {
         let text = """
-        LaunchNext CLI
+        MacLaunch CLI
 
         Usage:
-          launchnext
-          launchnext --gui
-          launchnext --tui
-          launchnext --cli list
-          launchnext --cli snapshot
-          launchnext --cli history
-          launchnext --cli history --limit 20
-          launchnext --cli example
-          launchnext --cli search --query "safari"
-          launchnext --cli search safari
-          launchnext --cli create-folder --path "/Applications/Mail.app" --path "/Applications/Notes.app" [--name "Utilities"] [--index 12] [--dry-run]
-          launchnext --cli move --source normal-app --path \"/Applications/Safari.app\" --to normal-index --index 12 [--dry-run]
-          launchnext --cli move --source normal-app --path \"/Applications/Safari.app\" --to folder-append --target-folder-id <folder-id> [--dry-run]
-          launchnext --cli move --source folder-app --folder-id <folder-id> --path \"/Applications/Safari.app\" --to folder-index --target-folder-id <folder-id> --index 0 [--dry-run]
-          launchnext --cli help
-          launchnext list
-          launchnext snapshot
-          launchnext search --query "mail"
-          launchnext help
+          maclaunch
+          maclaunch --gui
+          maclaunch --tui
+          maclaunch --cli list
+          maclaunch --cli snapshot
+          maclaunch --cli history
+          maclaunch --cli history --limit 20
+          maclaunch --cli example
+          maclaunch --cli search --query "safari"
+          maclaunch --cli search safari
+          maclaunch --cli create-folder --path "/Applications/Mail.app" --path "/Applications/Notes.app" [--name "Utilities"] [--index 12] [--dry-run]
+          maclaunch --cli move --source normal-app --path \"/Applications/Safari.app\" --to normal-index --index 12 [--dry-run]
+          maclaunch --cli move --source normal-app --path \"/Applications/Safari.app\" --to folder-append --target-folder-id <folder-id> [--dry-run]
+          maclaunch --cli move --source folder-app --folder-id <folder-id> --path \"/Applications/Safari.app\" --to folder-index --target-folder-id <folder-id> --index 0 [--dry-run]
+          maclaunch --cli help
+          maclaunch list
+          maclaunch snapshot
+          maclaunch search --query "mail"
+          maclaunch help
 
         Commands:
           list
@@ -167,18 +167,18 @@ enum LaunchNextCLI {
             Source folder app also needs: --folder-id <id>
 
         Requirements:
-          - LaunchNext GUI must be running for list/snapshot/search/create-folder/move.
+          - MacLaunch GUI must be running for list/snapshot/search/create-folder/move.
           - history/help do not require GUI.
           - "Command line interface" must be ON in General settings.
-          - `launchnext` (without args) enters TUI only in interactive terminal sessions.
+          - `maclaunch` (without args) enters TUI only in interactive terminal sessions.
           - non-interactive sessions default to GUI unless explicit `--cli` is used.
 
         Agent / non-interactive quick start:
-          launchnext --cli help
-          launchnext --cli list
-          launchnext --cli snapshot
-          launchnext --cli search --query "safari"
-          launchnext --cli move --source normal-app --path "/Applications/Thaw.app" --to folder-append --target-folder-id <folder-id>
+          maclaunch --cli help
+          maclaunch --cli list
+          maclaunch --cli snapshot
+          maclaunch --cli search --query "safari"
+          maclaunch --cli move --source normal-app --path "/Applications/Thaw.app" --to folder-append --target-folder-id <folder-id>
         """
         print(text)
     }
@@ -186,7 +186,7 @@ enum LaunchNextCLI {
     @discardableResult
     private static func runTUI(context: LaunchNextCLIContext) -> Int32 {
         if isatty(STDIN_FILENO) == 0 {
-            fputs("LaunchNext TUI requires an interactive terminal.\n", stderr)
+            fputs("MacLaunch TUI requires an interactive terminal.\n", stderr)
             return 1
         }
         let connectivityStatus = runRemoteCommand("ping", context: context, printOutput: false)
@@ -195,11 +195,11 @@ enum LaunchNextCLI {
         }
 
         printTUIBanner()
-        print("LaunchNext TUI")
+        print("MacLaunch TUI")
         print("Version: \(appVersionString())")
         print("Type 'help' for commands.")
 
-        var lineEditor = TUILineEditor(prompt: "launchnext> ",
+        var lineEditor = TUILineEditor(prompt: "maclaunch> ",
                                        historyPath: cliHistoryFilePath(),
                                        maxHistoryCount: cliHistoryMaxCount)
         lineEditor.loadHistory()
@@ -297,7 +297,7 @@ enum LaunchNextCLI {
     @discardableResult
     private static func runRemoteCommand(_ command: String, context: LaunchNextCLIContext, printOutput: Bool = true, arguments: [String: String] = [:]) -> Int32 {
         guard let execute = context.executeRemoteCommand else {
-            fputs("LaunchNext CLI endpoint is unavailable.\n", stderr)
+            fputs("MacLaunch CLI endpoint is unavailable.\n", stderr)
             return 1
         }
         switch execute(LaunchNextCLIRequest(command: command, arguments: arguments)) {
@@ -658,17 +658,7 @@ enum LaunchNextCLI {
     }
 
     private static func cliHistoryFilePath() -> String? {
-        let fileManager = FileManager.default
-        guard let appSupport = try? fileManager.url(for: .applicationSupportDirectory,
-                                                    in: .userDomainMask,
-                                                    appropriateFor: nil,
-                                                    create: true) else {
-            return nil
-        }
-        let directory = appSupport.appendingPathComponent("LaunchNext", isDirectory: true)
-        if !fileManager.fileExists(atPath: directory.path) {
-            try? fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-        }
+        guard let directory = try? AppStore.applicationSupportDirectoryURL() else { return nil }
         return directory.appendingPathComponent("cli_history", isDirectory: false).path
     }
 
@@ -1101,13 +1091,13 @@ enum LaunchNextCLI {
     private static func printCLIExamples() {
         print([
             "CLI examples:",
-            "  launchnext --cli list",
-            "  launchnext --cli snapshot",
-            "  launchnext --cli history",
-            "  launchnext --cli history --limit 20",
-            "  launchnext --cli search --query \"safari\"",
-            "  launchnext --cli create-folder --path \"/Applications/Mail.app\" --path \"/Applications/Notes.app\" --name \"Work\"",
-            "  launchnext --cli move --source normal-app --path \"/Applications/Safari.app\" --to normal-index --index 12 --dry-run"
+            "  maclaunch --cli list",
+            "  maclaunch --cli snapshot",
+            "  maclaunch --cli history",
+            "  maclaunch --cli history --limit 20",
+            "  maclaunch --cli search --query \"safari\"",
+            "  maclaunch --cli create-folder --path \"/Applications/Mail.app\" --path \"/Applications/Notes.app\" --name \"Work\"",
+            "  maclaunch --cli move --source normal-app --path \"/Applications/Safari.app\" --to normal-index --index 12 --dry-run"
         ].joined(separator: "\n"))
     }
 

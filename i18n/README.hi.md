@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **भाषाएँ**: [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [Русский](README.ru.md) | [हिन्दी](README.hi.md) | [Tiếng Việt](README.vi.md) | [Italiano](README.it.md) | [Čeština](README.cs.md) | [Polski](README.pl.md)
 
@@ -6,25 +6,25 @@
 
 **[यहाँ डाउनलोड करें](https://github.com/NezumiNingen/MacLaunch/releases/latest)** - नवीनतम संस्करण प्राप्त करें
 
-🌐 **वेबसाइट**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **दस्तावेज़**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **वेबसाइट**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/) \
+📚 **दस्तावेज़**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/)
 
-⭐ कृपया [LaunchNext](https://github.com/RoversX/LaunchNext) और विशेष रूप से मूल प्रोजेक्ट [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) को स्टार दें!
+⭐ कृपया [MacLaunch](https://github.com/NezumiNingen/MacLaunch) और विशेष रूप से मूल प्रोजेक्ट [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) को स्टार दें!
 
 | | |
 |:---:|:---:|
 | ![](../public/banner.webp) | ![](../public/setting1.webp) |
 | ![](../public/setting2.webp) | ![](../public/setting3.webp) |
 
-macOS Tahoe ने Launchpad हटा दिया है, और यह इतना उपयोग करना कठिन है, यह आपके Bio GPU का उपयोग नहीं करता। कृपया Apple, कम से कम लोगों को वापस स्विच करने का विकल्प तो दें। उससे पहले, यहाँ है LaunchNext।
+macOS Tahoe ने Launchpad हटा दिया है, और यह इतना उपयोग करना कठिन है, यह आपके Bio GPU का उपयोग नहीं करता। कृपया Apple, कम से कम लोगों को वापस स्विच करने का विकल्प तो दें। उससे पहले, यहाँ है MacLaunch।
 
 *[LaunchNow](https://github.com/ggkevinnnn/LaunchNow) (ggkevinnnn) पर आधारित — मूल प्रोजेक्ट को बहुत-बहुत धन्यवाद!❤️*
 
-*LaunchNow ने GPL 3 लाइसेंस चुना है। LaunchNext समान लाइसेंसिंग शर्तों का पालन करता है।*
+*LaunchNow ने GPL 3 लाइसेंस चुना है। MacLaunch समान लाइसेंसिंग शर्तों का पालन करता है।*
 
 If macOS blocks first launch, open the app once, then choose Open Anyway in System Settings > Privacy & Security.
 
-## LaunchNext क्या देता है
+## MacLaunch क्या देता है
 
 - ✅ **पुराने सिस्टम Launchpad से वन-क्लिक आयात** - नेटिव Launchpad SQLite डेटाबेस को सीधे पढ़कर फ़ोल्डर, ऐप स्थितियाँ और लेआउट पुनर्स्थापित करता है
 - ✅ **मैनुअल ऐप संगठन** - ऐप्स को व्यवस्थित करें, फ़ोल्डर बनाएं और अपनी पसंद का लेआउट रखें
@@ -32,7 +32,7 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **कॉम्पैक्ट और पूर्णस्क्रीन मोड** - अलग-अलग सेटिंग्स के साथ
 - ✅ **कीबोर्ड-केंद्रित वर्कफ़्लो** - तेज़ खोज, नेविगेशन और लॉन्च
 - ✅ **CLI / TUI समर्थन** - टर्मिनल से लेआउट देखें और प्रबंधित करें
-- ✅ **Hot Corner और नेटिव जेस्चर सक्रियण** - LaunchNext खोलने के कई वैश्विक तरीके
+- ✅ **Hot Corner और नेटिव जेस्चर सक्रियण** - MacLaunch खोलने के कई वैश्विक तरीके
 - ✅ **ऐप्स को सीधे Dock में खींचें** - Core Animation इंजन में उपलब्ध
 - ✅ **Markdown रिलीज़ नोट्स वाला अपडेट सेंटर** - अधिक समृद्ध इन-ऐप अपडेट अनुभव
 - ✅ **बैकअप और पुनर्स्थापन टूल** - अधिक सुरक्षित एक्सपोर्ट और रिकवरी
@@ -52,12 +52,12 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 ऐप डेटा यहाँ संग्रहीत होता है:
 
 ```text
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ## नेटिव Launchpad इंटीग्रेशन
 
-LaunchNext सिस्टम Launchpad डेटाबेस को सीधे पढ़ सकता है:
+MacLaunch सिस्टम Launchpad डेटाबेस को सीधे पढ़ सकता है:
 
 ```bash
 /private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db
@@ -105,7 +105,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### शुरुआत करना
 
-1. LaunchNext पहली बार चलने पर सभी इंस्टॉल किए गए ऐप्स स्कैन करता है
+1. MacLaunch पहली बार चलने पर सभी इंस्टॉल किए गए ऐप्स स्कैन करता है
 2. अपना पुराना Launchpad लेआउट आयात करें या खाली लेआउट से शुरू करें
 3. खोज, कीबोर्ड, ड्रैग-एंड-ड्रॉप और फ़ोल्डरों से ऐप्स व्यवस्थित करें
 4. सेटिंग्स खोलकर इंजन, लेआउट मोड, सक्रियण विधियाँ और ऑटोमेशन कॉन्फ़िगर करें
@@ -120,22 +120,22 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 - **Legacy Engine** - अधिकतम संगतता के लिए पुराने रेंडरिंग पथ को बनाए रखता है
 - **Next Engine + Core Animation** - बेहतर अनुभव और नए फीचर्स के लिए अनुशंसित
-- **कॉम्पैक्ट / पूर्णस्क्रीन** - LaunchNext दोनों मोड को सपोर्ट करता है और अलग-अलग सेटिंग्स रख सकता है
+- **कॉम्पैक्ट / पूर्णस्क्रीन** - MacLaunch दोनों मोड को सपोर्ट करता है और अलग-अलग सेटिंग्स रख सकता है
 
 ## मुख्य फीचर
 
 ### सक्रियण और इनपुट
 
-- **Hot Corner समर्थन** - कॉन्फ़िगर करने योग्य स्क्रीन कोने से LaunchNext खोलें
+- **Hot Corner समर्थन** - कॉन्फ़िगर करने योग्य स्क्रीन कोने से MacLaunch खोलें
 - **प्रायोगिक नेटिव जेस्चर समर्थन** - चार-उंगली pinch / tap क्रियाएँ
-- **ग्लोबल शॉर्टकट समर्थन** - कहीं से भी LaunchNext खोलें
+- **ग्लोबल शॉर्टकट समर्थन** - कहीं से भी MacLaunch खोलें
 - **Dock में ड्रैग** - Core Animation इंजन के साथ ऐप्स को सीधे macOS Dock में दें
 
 ### ऑटोमेशन और पावर यूज़र वर्कफ़्लो
 
 - **CLI / TUI समर्थन** - लेआउट देखें, ऐप्स खोजें, फ़ोल्डर बनाएं, ऐप्स स्थानांतरित करें और वर्कफ़्लो ऑटोमेट करें
 - **agent-अनुकूल वर्कफ़्लो** - टर्मिनल-आधारित AI agent और shell automation के साथ अच्छा काम करता है
-- **सेटिंग्स से कमांड लाइन सक्षम करें** - प्रबंधित `launchnext` कमांड को इंस्टॉल या हटाएँ
+- **सेटिंग्स से कमांड लाइन सक्षम करें** - प्रबंधित `maclaunch` कमांड को इंस्टॉल या हटाएँ
 
 ### अपडेट अनुभव
 
@@ -152,7 +152,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### एक्सेसिबिलिटी और नेविगेशन
 
 - **वॉइस फ़ीडबैक समर्थन** - नेविगेशन के दौरान ऐप्स और फ़ोल्डरों के नाम सुनाता है
-- **कंट्रोलर समर्थन** - गेम कंट्रोलर के साथ LaunchNext और फ़ोल्डरों को चलाएँ
+- **कंट्रोलर समर्थन** - गेम कंट्रोलर के साथ MacLaunch और फ़ोल्डरों को चलाएँ
 - **कीबोर्ड-केंद्रित इंटरैक्शन** - माउस के बिना तेज़ खोज और नेविगेशन
 
 ## प्रदर्शन और स्थिरता
@@ -173,7 +173,7 @@ A: सुनिश्चित करें कि आप macOS 26 या बा
 A: `Next Engine + Core Animation` सर्वोत्तम अनुभव के लिए अनुशंसित है। `Legacy Engine` केवल तभी उपयोग करें जब आपको पुराने compatibility path की आवश्यकता हो।
 
 **Q: CLI कमांड अभी तक क्यों नहीं है?**  
-A: पहले सेटिंग्स में command line interface सक्षम करें। LaunchNext आपके लिए प्रबंधित `launchnext` shim इंस्टॉल और हटा सकता है।
+A: पहले सेटिंग्स में command line interface सक्षम करें। MacLaunch आपके लिए प्रबंधित `maclaunch` shim इंस्टॉल और हटा सकता है।
 
 ## योगदान
 
@@ -195,13 +195,13 @@ A: पहले सेटिंग्स में command line interface सक
 
 ## ऐप प्रबंधन का भविष्य
 
-जब Apple अनुकूलन योग्य app launcher से दूर जा रहा है, LaunchNext आधुनिक macOS पर मैनुअल संगठन, उपयोगकर्ता नियंत्रण और तेज़ पहुँच को बनाए रखने की कोशिश करता है।
+जब Apple अनुकूलन योग्य app launcher से दूर जा रहा है, MacLaunch आधुनिक macOS पर मैनुअल संगठन, उपयोगकर्ता नियंत्रण और तेज़ पहुँच को बनाए रखने की कोशिश करता है।
 
-**LaunchNext** केवल Launchpad का विकल्प नहीं है — यह workflow regression के लिए एक व्यावहारिक उत्तर है।
+**MacLaunch** केवल Launchpad का विकल्प नहीं है — यह workflow regression के लिए एक व्यावहारिक उत्तर है।
 
 ---
 
-**LaunchNext** - अपने ऐप लॉन्चर पर नियंत्रण वापस पाएँ 🚀
+**MacLaunch** - अपने ऐप लॉन्चर पर नियंत्रण वापस पाएँ 🚀
 
 *उन macOS उपयोगकर्ताओं के लिए जो customization पर समझौता नहीं करना चाहते।*
 
@@ -215,4 +215,4 @@ A: पहले सेटिंग्स में command line interface सक
 
 - प्रयोगात्मक gesture समर्थन [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) और [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) के fork पर आधारित है।❤️
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

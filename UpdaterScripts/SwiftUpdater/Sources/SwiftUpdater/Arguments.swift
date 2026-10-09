@@ -13,7 +13,7 @@ struct UpdaterArguments {
     var resetLanguage: Bool
     var holdWindow: Bool
 
-    static let defaultAssetPattern = "LaunchNext.*\\.zip"
+    static let defaultAssetPattern = "(?:MacLaunch|LaunchNext).*\\.zip"
 }
 
 enum ArgumentError: Error {

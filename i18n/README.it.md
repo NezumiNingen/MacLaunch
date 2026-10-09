@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **Lingue**: [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [Русский](README.ru.md) | [हिन्दी](README.hi.md) | [Tiếng Việt](README.vi.md) | [Italiano](README.it.md) | [Čeština](README.cs.md) | [Polski](README.pl.md)
 
@@ -6,25 +6,25 @@
 
 **[Scarica qui](https://github.com/NezumiNingen/MacLaunch/releases/latest)** - Ottieni l'ultima versione
 
-🌐 **Sito web**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **Documentazione**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **Sito web**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/) \
+📚 **Documentazione**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/)
 
-⭐ Considera di mettere una stella a [LaunchNext](https://github.com/RoversX/LaunchNext) e soprattutto a [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
+⭐ Considera di mettere una stella a [MacLaunch](https://github.com/NezumiNingen/MacLaunch) e soprattutto a [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)!
 
 | | |
 |:---:|:---:|
 | ![](../public/banner.webp) | ![](../public/setting1.webp) |
 | ![](../public/setting2.webp) | ![](../public/setting3.webp) |
 
-macOS Tahoe ha rimosso il launchpad, ed è così difficile da usare, non utilizza la tua Bio GPU, per favore Apple, almeno dà alle persone un'opzione per tornare indietro. Prima di allora, ecco LaunchNext
+macOS Tahoe ha rimosso il launchpad, ed è così difficile da usare, non utilizza la tua Bio GPU, per favore Apple, almeno dà alle persone un'opzione per tornare indietro. Prima di allora, ecco MacLaunch
 
 *Basato su [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) di ggkevinnnn — un enorme grazie al progetto originale!❤️*
 
-*LaunchNow ha scelto la licenza GPL 3. LaunchNext segue gli stessi termini di licenza.*
+*LaunchNow ha scelto la licenza GPL 3. MacLaunch segue gli stessi termini di licenza.*
 
 If macOS blocks first launch, open the app once, then choose Open Anyway in System Settings > Privacy & Security.
 
-## Cosa offre LaunchNext
+## Cosa offre MacLaunch
 
 - ✅ **Importazione con un clic dal vecchio Launchpad di sistema** - legge direttamente il database SQLite nativo di Launchpad per ricreare cartelle, posizioni delle app e layout
 - ✅ **Organizzazione manuale delle app** - sposta le app, crea cartelle e mantieni il layout come preferisci
@@ -32,7 +32,7 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Modalità compatta e a schermo intero** - con supporto a impostazioni separate
 - ✅ **Workflow orientato alla tastiera** - ricerca, navigazione e apertura rapide
 - ✅ **Supporto CLI / TUI** - ispeziona e gestisci il layout dal terminale
-- ✅ **Attivazione con Hot Corner e gesti nativi** - più modi per aprire LaunchNext globalmente
+- ✅ **Attivazione con Hot Corner e gesti nativi** - più modi per aprire MacLaunch globalmente
 - ✅ **Trascina le app direttamente nel Dock** - disponibile con il motore Core Animation
 - ✅ **Centro aggiornamenti con note di rilascio Markdown** - esperienza di aggiornamento integrata più ricca
 - ✅ **Strumenti di backup e ripristino** - esportazione e recupero più sicuri
@@ -52,12 +52,12 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 I dati dell'applicazione sono archiviati in:
 
 ```text
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ## Integrazione nativa con Launchpad
 
-LaunchNext può leggere direttamente il database Launchpad del sistema:
+MacLaunch può leggere direttamente il database Launchpad del sistema:
 
 ```bash
 /private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db
@@ -105,7 +105,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### Iniziare
 
-1. LaunchNext analizza le app installate al primo avvio
+1. MacLaunch analizza le app installate al primo avvio
 2. Importa il vecchio layout Launchpad o parti da un layout vuoto
 3. Usa ricerca, tastiera, drag-and-drop e cartelle per organizzare le app
 4. Apri Impostazioni per configurare motore, modalità di layout, metodi di attivazione e automazione
@@ -120,22 +120,22 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 - **Legacy Engine** - mantiene il vecchio percorso di rendering per privilegiare la compatibilità
 - **Next Engine + Core Animation** - consigliato per la migliore esperienza complessiva e le funzionalità più recenti
-- **Compatta / Schermo intero** - LaunchNext supporta entrambe le modalità e può mantenere impostazioni separate
+- **Compatta / Schermo intero** - MacLaunch supporta entrambe le modalità e può mantenere impostazioni separate
 
 ## Funzionalità chiave
 
 ### Attivazione e input
 
-- **Supporto Hot Corner** - apri LaunchNext da un angolo dello schermo configurabile
+- **Supporto Hot Corner** - apri MacLaunch da un angolo dello schermo configurabile
 - **Supporto sperimentale ai gesti nativi** - azioni pinch / tap a quattro dita
-- **Supporto alle scorciatoie globali** - apri LaunchNext da qualsiasi punto
+- **Supporto alle scorciatoie globali** - apri MacLaunch da qualsiasi punto
 - **Trascinamento nel Dock** - consegna le app direttamente al Dock di macOS con il motore Core Animation
 
 ### Automazione e workflow avanzato
 
 - **Supporto CLI / TUI** - ispeziona layout, cerca app, crea cartelle, sposta app e automatizza workflow
 - **Workflow adatti agli agent** - funziona bene con agent AI basati su terminale e shell automation
-- **Abilitazione della riga di comando dalle Impostazioni** - installa o rimuovi il comando gestito `launchnext`
+- **Abilitazione della riga di comando dalle Impostazioni** - installa o rimuovi il comando gestito `maclaunch`
 
 ### Esperienza di aggiornamento
 
@@ -152,7 +152,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### Accessibilità e navigazione
 
 - **Supporto al feedback vocale** - annuncia app e cartelle durante la navigazione
-- **Supporto controller** - naviga LaunchNext e le cartelle con un game controller
+- **Supporto controller** - naviga MacLaunch e le cartelle con un game controller
 - **Interazione orientata alla tastiera** - ricerca e navigazione rapide senza dipendere dal mouse
 
 ## Prestazioni e stabilità
@@ -173,7 +173,7 @@ A: Verifica di essere su macOS 26 o successivo, rimuovi la quarantena se necessa
 A: `Next Engine + Core Animation` è quello consigliato per la migliore esperienza. Usa `Legacy Engine` solo se ti serve davvero il vecchio percorso di compatibilità.
 
 **Q: Perché il comando CLI non esiste ancora?**  
-A: Abilita prima l'interfaccia a riga di comando nelle Impostazioni. LaunchNext può installare e rimuovere per te lo shim gestito `launchnext`.
+A: Abilita prima l'interfaccia a riga di comando nelle Impostazioni. MacLaunch può installare e rimuovere per te lo shim gestito `maclaunch`.
 
 ## Contribuire
 
@@ -195,13 +195,13 @@ I contributi sono benvenuti.
 
 ## Il futuro della gestione delle app
 
-Mentre Apple si allontana dai launcher personalizzabili, LaunchNext cerca di mantenere organizzazione manuale, controllo utente e accesso rapido su macOS moderno.
+Mentre Apple si allontana dai launcher personalizzabili, MacLaunch cerca di mantenere organizzazione manuale, controllo utente e accesso rapido su macOS moderno.
 
-**LaunchNext** non è solo un sostituto di Launchpad — è una risposta pratica a una regressione del workflow.
+**MacLaunch** non è solo un sostituto di Launchpad — è una risposta pratica a una regressione del workflow.
 
 ---
 
-**LaunchNext** - Riprendi il controllo del tuo launcher di app 🚀
+**MacLaunch** - Riprendi il controllo del tuo launcher di app 🚀
 
 *Per utenti macOS che non vogliono scendere a compromessi sulla personalizzazione.*
 
@@ -215,4 +215,4 @@ Mentre Apple si allontana dai launcher personalizzabili, LaunchNext cerca di man
 
 - Il supporto sperimentale ai gesti è costruito su [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) e sul fork di [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport).❤️
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

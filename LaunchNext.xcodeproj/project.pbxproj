@@ -630,10 +630,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/UpdateChannel.plist;
 				INFOPLIST_KEY_CFBundleAllowMixedLocalizations = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = LaunchNext;
+				INFOPLIST_KEY_CFBundleDisplayName = MacLaunch;
+				INFOPLIST_KEY_CFBundleName = MacLaunch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 RoversX / CloseX. Licensed under GPL-3.0";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 RoversX / CloseX. MacLaunch changes © 2026 NezumiNingen. Licensed under GPL-3.0";
 				LAUNCHNEXT_UPDATE_REPOSITORY_OWNER = NezumiNingen;
 				LAUNCHNEXT_UPDATE_REPOSITORY_NAME = MacLaunch;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -641,7 +642,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 2.4.3;
-				PRODUCT_BUNDLE_IDENTIFIER = com.roversx.launchnext;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nezuminingen.maclaunch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
@@ -675,10 +676,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/UpdateChannel.plist;
 				INFOPLIST_KEY_CFBundleAllowMixedLocalizations = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = LaunchNext;
+				INFOPLIST_KEY_CFBundleDisplayName = MacLaunch;
+				INFOPLIST_KEY_CFBundleName = MacLaunch;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 RoversX / CloseX. Licensed under GPL-3.0";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 RoversX / CloseX. MacLaunch changes © 2026 NezumiNingen. Licensed under GPL-3.0";
 				LAUNCHNEXT_UPDATE_REPOSITORY_OWNER = NezumiNingen;
 				LAUNCHNEXT_UPDATE_REPOSITORY_NAME = MacLaunch;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -686,7 +688,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 2.4.3;
-				PRODUCT_BUNDLE_IDENTIFIER = com.roversx.launchnext;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nezuminingen.maclaunch;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
@@ -711,7 +713,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.roversx.launchnext.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nezuminingen.maclaunch.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -733,7 +735,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.roversx.launchnext.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nezuminingen.maclaunch.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;

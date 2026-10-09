@@ -1,6 +1,6 @@
 # SwiftUpdater
 
-SwiftUpdater is the Swift-based command line updater used by LaunchNext. It replaces the previous Python script and provides the same functionality with localized UI, interactive ncurses prompts, and non-interactive automation flags.
+SwiftUpdater is the Swift-based command line updater used by MacLaunch. It replaces the previous Python script and provides the same functionality with localized UI, interactive ncurses prompts, and non-interactive automation flags.
 
 ## Building
 
@@ -30,9 +30,9 @@ From the terminal you can invoke the updater directly:
 Key flags:
 
 - `--tag <release>` – install a specific GitHub release tag
-- `--asset-pattern <regex>` – filter release assets (defaults to `LaunchNext.*\.zip`)
-- `--repository-owner <owner>` and `--repository-name <name>` – use a custom GitHub release repository; provide both together. If omitted, the standalone updater keeps the upstream default.
-- `--install-dir <path>` – target installation directory (defaults to `/Applications/LaunchNext.app`)
+- `--asset-pattern <regex>` – filter release assets (defaults to `(?:MacLaunch|LaunchNext).*\.zip` for compatibility with older releases)
+- `--repository-owner <owner>` and `--repository-name <name>` – use a custom GitHub release repository; provide both together. If omitted, the updater checks `NezumiNingen/MacLaunch`.
+- `--install-dir <path>` – target installation directory (defaults to `/Applications/MacLaunch.app`)
 - `--download-only` – download the bundle into the cache without installing
 - `--yes` – non-interactive mode (assume yes to prompts)
 - `--language <code>` – force a language; run without it for the interactive menu
@@ -41,7 +41,7 @@ Key flags:
 Localization data and user preferences are stored under:
 
 ```
-~/Library/Application Support/LaunchNext/updates/config.json
+~/Library/Application Support/MacLaunch/updates/config.json
 ```
 
 ## ncurses UI
@@ -54,12 +54,12 @@ When run interactively (terminal attached), the updater launches an ncurses inte
 
 If keyboard controls fail, the updater can fall back to non-interactive mode with `--yes`.
 
-## Integration with LaunchNext
+## Integration with MacLaunch
 
 The main app bundles the compiled SwiftUpdater at:
 
 ```
-LaunchNext.app/Contents/Resources/Updater/SwiftUpdater
+MacLaunch.app/Contents/Resources/Updater/SwiftUpdater
 ```
 
 During build, the `Run Script (Updater)` phase copies the binary from `.build/.../SwiftUpdater`, signs it with Xcode's active signing identity and Hardened Runtime, and packages it with the app. Builds without an available signing identity fall back to an ad-hoc Hardened Runtime signature.

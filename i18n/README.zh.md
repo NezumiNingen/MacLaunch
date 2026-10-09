@@ -1,4 +1,4 @@
-# LaunchNext
+# MacLaunch
 
 **语言**: [English](../README.md) | [简体中文](README.zh.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [Русский](README.ru.md) | [हिन्दी](README.hi.md) | [Tiếng Việt](README.vi.md) | [Italiano](README.it.md) | [Čeština](README.cs.md) | [Polski](README.pl.md)
 
@@ -8,25 +8,25 @@
 
 MacLaunch 是基于 [RoversX/LaunchNext](https://github.com/RoversX/LaunchNext) 的社区定制版，加入自动整理、文件夹、多页面拖放、Liquid Glass 风格控件，以及本仓库的更新来源。
 
-🌐 **网站**: [closex.org/launchnext](https://closex.org/launchnext/)  
-📚 **文档**: [docs.closex.org/launchnext](https://docs.closex.org/launchnext/)
+🌐 **网站**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/) \
+📚 **文档**: [github.com/NezumiNingen/MacLaunch](https://github.com/NezumiNingen/MacLaunch/)
 
-⭐ 请考虑为 [LaunchNext](https://github.com/RoversX/LaunchNext) 和原项目 [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) 点 star！
+⭐ 请考虑为 [MacLaunch](https://github.com/NezumiNingen/MacLaunch) 和原项目 [LaunchNow](https://github.com/ggkevinnnn/LaunchNow) 点 star！
 
 | | |
 |:---:|:---:|
 | ![](../public/banner.webp) | ![](../public/setting1.webp) |
 | ![](../public/setting2.webp) | ![](../public/setting3.webp) |
 
-macOS Tahoe 移除了 Launchpad，新的界面很难用，也不能充分利用你的 Bio GPU。苹果，至少给用户一个切换回去的选项吧。在此之前，这里是 LaunchNext。
+macOS Tahoe 移除了 Launchpad，新的界面很难用，也不能充分利用你的 Bio GPU。苹果，至少给用户一个切换回去的选项吧。在此之前，这里是 MacLaunch。
 
 *基于 [LaunchNow](https://github.com/ggkevinnnn/LaunchNow)（作者 ggkevinnnn）开发——非常感谢原项目！❤️*
 
-*LaunchNow 选择了 GPL 3 许可证，LaunchNext 遵循相同的许可条款。*
+*LaunchNow 选择了 GPL 3 许可证，MacLaunch 遵循相同的许可条款。*
 
 如果 macOS 阻止首次启动，先尝试打开应用，再到「系统设置 > 隐私与安全性」选择「仍要打开」。每台 Mac 都需要单独允许。
 
-## LaunchNext 提供什么
+## MacLaunch 提供什么
 
 - ✅ **一键导入旧系统 Launchpad** - 直接读取你的原生 Launchpad SQLite 数据库，重建文件夹、应用位置和布局
 - ✅ **手动整理应用** - 移动应用、创建文件夹，并按你的方式保留布局
@@ -54,12 +54,12 @@ macOS Tahoe 移除了 Launchpad，新的界面很难用，也不能充分利用�
 应用数据保存在：
 
 ```text
-~/Library/Application Support/LaunchNext/Data.store
+~/Library/Application Support/MacLaunch/Data.store
 ```
 
 ## 原生 Launchpad 集成
 
-LaunchNext 可以直接读取系统 Launchpad 数据库：
+MacLaunch 可以直接读取系统 Launchpad 数据库：
 
 ```bash
 /private$(getconf DARWIN_USER_DIR)com.apple.dock.launchpad/db/db
@@ -107,7 +107,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ### 快速开始
 
-1. LaunchNext 首次启动时会扫描所有已安装应用
+1. MacLaunch 首次启动时会扫描所有已安装应用
 2. 导入旧 Launchpad 布局，或从空布局开始
 3. 通过搜索、键盘导航、鼠标拖拽和文件夹整理应用
 4. 在设置中配置引擎、布局模式、激活方式和自动化功能
@@ -122,22 +122,22 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 - **Legacy Engine** - 保留旧渲染路径，优先兼容性
 - **Next Engine + Core Animation** - 推荐，整体体验和新功能支持更好
-- **紧凑 / 全屏** - LaunchNext 支持两种模式，并可分别保存设置
+- **紧凑 / 全屏** - MacLaunch 支持两种模式，并可分别保存设置
 
 ## 关键功能
 
 ### 激活与输入
 
-- **Hot Corner 支持** - 从可配置的屏幕角落打开 LaunchNext
+- **Hot Corner 支持** - 从可配置的屏幕角落打开 MacLaunch
 - **实验性原生手势支持** - 四指 pinch / tap 动作
-- **全局快捷键支持** - 从任何位置打开 LaunchNext
+- **全局快捷键支持** - 从任何位置打开 MacLaunch
 - **拖动应用到 Dock** - 在 Core Animation 引擎中将应用直接交给 macOS Dock
 
 ### 自动化与高级工作流
 
 - **CLI / TUI 支持** - 查看布局、搜索应用、创建文件夹、移动应用并自动化工作流
 - **对 agent 友好** - 适合终端型 AI agent 和 shell 自动化
-- **设置中启用命令行** - 可安装或移除托管的 `launchnext` 命令
+- **设置中启用命令行** - 可安装或移除托管的 `maclaunch` 命令
 
 ### 更新体验
 
@@ -154,7 +154,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 ### 可访问性与导航
 
 - **语音反馈支持** - 导航时播报应用和文件夹名称
-- **控制器支持** - 可用游戏手柄操作 LaunchNext 和文件夹
+- **控制器支持** - 可用游戏手柄操作 MacLaunch 和文件夹
 - **键盘优先交互** - 不依赖鼠标也能快速搜索和导航
 
 ## 性能与稳定性
@@ -175,7 +175,7 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 答：推荐使用 `Next Engine + Core Animation`。如果你确实需要旧兼容路径，再使用 `Legacy Engine`。
 
 **问：为什么还没有 CLI 命令？**  
-答：先在设置中启用命令行接口。LaunchNext 可以为你安装和移除托管的 `launchnext` shim。
+答：先在设置中启用命令行接口。MacLaunch 可以为你安装和移除托管的 `maclaunch` shim。
 
 ## 贡献
 
@@ -197,13 +197,13 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 ## 应用管理的未来
 
-随着 Apple 逐渐远离可自定义的应用启动界面，LaunchNext 试图在现代 macOS 上保留手动组织、用户控制和高效访问。
+随着 Apple 逐渐远离可自定义的应用启动界面，MacLaunch 试图在现代 macOS 上保留手动组织、用户控制和高效访问。
 
-**LaunchNext** 不只是 Launchpad 的替代品，它是对工作流退化的一种实际回应。
+**MacLaunch** 不只是 Launchpad 的替代品，它是对工作流退化的一种实际回应。
 
 ---
 
-**LaunchNext** - 重新掌控你的应用启动器 🚀
+**MacLaunch** - 重新掌控你的应用启动器 🚀
 
 *为拒绝在定制化上妥协的 macOS 用户打造。*
 
@@ -217,4 +217,4 @@ xcodebuild -project LaunchNext.xcodeproj -scheme LaunchNext -configuration Relea
 
 - 实验性手势支持基于 [OpenMultitouchSupport](https://github.com/Kyome22/OpenMultitouchSupport) 及其 [KrishKrosh](https://github.com/KrishKrosh/OpenMultitouchSupport) 分支。❤️
 
-![GitHub downloads](https://img.shields.io/github/downloads/RoversX/LaunchNext/total)
+![GitHub downloads](https://img.shields.io/github/downloads/NezumiNingen/MacLaunch/total)

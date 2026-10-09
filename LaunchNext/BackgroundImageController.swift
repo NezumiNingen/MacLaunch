@@ -534,7 +534,7 @@ final class BackgroundImageController: ObservableObject {
                 Self.removeAllPersistentSnapshots()
             }
             if !removedOrSuperseded {
-                NSLog("[LaunchNext] Failed to remove wallpaper snapshot cache after retries")
+                NSLog("[MacLaunch] Failed to remove wallpaper snapshot cache after retries")
             }
         }
     }
@@ -1284,7 +1284,7 @@ final class BackgroundImageController: ObservableObject {
             return nil
         }
         return caches
-            .appendingPathComponent("com.roversx.launchnext", isDirectory: true)
+            .appendingPathComponent("io.nezuminingen.maclaunch", isDirectory: true)
             .appendingPathComponent("WallpaperSnapshots", isDirectory: true)
     }
 

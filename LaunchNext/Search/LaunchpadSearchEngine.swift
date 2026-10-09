@@ -6,7 +6,7 @@ final class LaunchpadSearchEngine: ObservableObject {
 
     private let matcher = FuzzyMatcher()
     private let indexQueue = DispatchQueue(
-        label: "com.roversx.LaunchNext.search-index",
+        label: "io.nezuminingen.MacLaunch.search-index",
         qos: .utility
     )
     private let indexLock = NSLock()

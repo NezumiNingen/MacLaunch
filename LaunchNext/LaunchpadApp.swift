@@ -146,7 +146,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         var socketPathForEndpoint: String?
         if needsEndpoint {
             guard let socketPath = LaunchNextCLIIPCConfig.socketPath() else {
-                fputs("Failed to resolve LaunchNext CLI socket path.\n", stderr)
+                fputs("Failed to resolve MacLaunch CLI socket path.\n", stderr)
                 isTerminating = true
                 NSApp.terminate(nil)
                 return true
@@ -189,7 +189,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
 
         stopCLIEndpointMonitor()
 
-        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "io.roversx.launchnext.cli.endpoint-monitor"))
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "io.nezuminingen.maclaunch.cli.endpoint-monitor"))
         var failureCount = 0
         timer.schedule(deadline: .now() + .seconds(1), repeating: .seconds(1))
         timer.setEventHandler { [weak self] in
@@ -212,7 +212,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
                     guard self.isHeadlessTUIRuntime, !self.isTerminating else { return }
-                    fputs("LaunchNext GUI disconnected. Exiting TUI process.\n", stderr)
+                    fputs("MacLaunch disconnected. Exiting TUI process.\n", stderr)
                     self.isTerminating = true
                     NSApp.terminate(nil)
                 }
@@ -319,12 +319,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
 
     private func makePreferredModelContainer() -> ModelContainer? {
         do {
-            let fm = FileManager.default
-            let appSupport = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let storeDir = appSupport.appendingPathComponent("LaunchNext", isDirectory: true)
-            if !fm.fileExists(atPath: storeDir.path) {
-                try fm.createDirectory(at: storeDir, withIntermediateDirectories: true)
-            }
+            let storeDir = try AppStore.applicationSupportDirectoryURL()
             let storeURL = storeDir.appendingPathComponent("Data.store")
             let configuration = ModelConfiguration(url: storeURL)
             return try ModelContainer(for: TopItemData.self, PageEntryData.self, configurations: configuration)
@@ -551,7 +546,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
 
         if cliIPCServer == nil {
             cliIPCServer = LaunchNextCLIIPCServer(socketPath: socketPath) { [weak self] command, arguments in
-                guard let self else { return .failure("LaunchNext GUI is unavailable.") }
+                guard let self else { return .failure("MacLaunch is unavailable.") }
                 return self.handleCLIIPCCommand(command, arguments: arguments)
             }
         }
@@ -559,7 +554,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         do {
             try cliIPCServer?.start()
         } catch {
-            NSLog("LaunchNext: Failed to start CLI IPC server: \(error.localizedDescription)")
+            NSLog("MacLaunch: Failed to start CLI IPC server: \(error.localizedDescription)")
         }
     }
 
@@ -1320,7 +1315,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
                                          0,
                                          &hotKeyRef)
         if status != noErr {
-            NSLog("LaunchNext: Failed to register launchpad hotkey (status %d)", status)
+            NSLog("MacLaunch: Failed to register launchpad hotkey (status %d)", status)
             hotKeyRef = nil
         }
     }
@@ -1369,7 +1364,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSGestureR
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         let status = InstallEventHandler(GetEventDispatcherTarget(), hotKeyEventCallback, 1, &eventType, UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()), &hotKeyEventHandler)
         if status != noErr {
-            NSLog("LaunchNext: Failed to install hotkey handler (status %d)", status)
+            NSLog("MacLaunch: Failed to install hotkey handler (status %d)", status)
         }
     }
 

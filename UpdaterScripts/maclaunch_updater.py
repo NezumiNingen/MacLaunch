@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-REPO_OWNER = "RoversX"
-REPO_NAME = "LaunchNext"
-DEFAULT_INSTALL = "/Applications/LaunchNext.app"
-DEFAULT_PATTERN = r"LaunchNext.*\.zip"
+REPO_OWNER = "NezumiNingen"
+REPO_NAME = "MacLaunch"
+DEFAULT_INSTALL = "/Applications/MacLaunch.app"
+DEFAULT_PATTERN = r"(?:MacLaunch|LaunchNext).*\.zip"
 CONFIG_NAME = "config.json"
 LOG_NAME = "updater.log"
 DOWNLOADS_SUBDIR = "downloads"
@@ -44,7 +44,7 @@ STRINGS = {
         "install_prepare": "Preparing to install into {path}",
         "requires_admin": "Administrator privileges required. Please enter your password if prompted.",
         "install_complete": "Installation complete",
-        "relaunch_warn": "Warning: failed to relaunch LaunchNext automatically",
+        "relaunch_warn": "Warning: failed to relaunch MacLaunch automatically",
         "release_notes": "Release notes: {url}",
         "update_complete": "Update complete: {tag}",
         "update_elapsed": "Update finished in {seconds}s",
@@ -78,7 +78,7 @@ STRINGS = {
         "install_prepare": "准备安装到 {path}",
         "requires_admin": "需要管理员权限，请根据提示输入密码。",
         "install_complete": "安装完成",
-        "relaunch_warn": "警告：自动重新打开 LaunchNext 失败",
+        "relaunch_warn": "警告：自动重新打开 MacLaunch 失败",
         "release_notes": "更新说明：{url}",
         "update_complete": "更新完成：{tag}",
         "update_elapsed": "本次更新耗时 {seconds} 秒",
@@ -112,7 +112,7 @@ STRINGS = {
         "install_prepare": "準備安裝到 {path}",
         "requires_admin": "需要管理員權限，請依照提示輸入密碼。",
         "install_complete": "安裝完成",
-        "relaunch_warn": "警告：自動重新開啟 LaunchNext 失敗",
+        "relaunch_warn": "警告：自動重新開啟 MacLaunch 失敗",
         "release_notes": "更新說明：{url}",
         "update_complete": "更新完成：{tag}",
         "update_elapsed": "本次更新耗時 {seconds} 秒",
@@ -146,7 +146,7 @@ STRINGS = {
         "install_prepare": "{path} にインストール準備中",
         "requires_admin": "管理者権限が必要です。パスワードを入力してください。",
         "install_complete": "インストール完了",
-        "relaunch_warn": "警告: LaunchNext の再起動に失敗しました",
+        "relaunch_warn": "警告: MacLaunch の再起動に失敗しました",
         "release_notes": "リリースノート: {url}",
         "update_complete": "アップデート完了: {tag}",
         "update_elapsed": "処理時間: {seconds} 秒",
@@ -180,7 +180,7 @@ STRINGS = {
         "install_prepare": "{path} 에 설치 준비 중",
         "requires_admin": "관리자 권한이 필요합니다. 암호를 입력해 주세요.",
         "install_complete": "설치 완료",
-        "relaunch_warn": "경고: LaunchNext 자동 실행 실패",
+        "relaunch_warn": "경고: MacLaunch 자동 실행 실패",
         "release_notes": "릴리스 노트: {url}",
         "update_complete": "업데이트 완료: {tag}",
         "update_elapsed": "소요 시간: {seconds}초",
@@ -214,7 +214,7 @@ STRINGS = {
         "install_prepare": "Préparation de l’installation dans {path}",
         "requires_admin": "Privilèges administrateur requis. Veuillez saisir votre mot de passe si nécessaire.",
         "install_complete": "Installation terminée",
-        "relaunch_warn": "Avertissement : impossible de relancer LaunchNext automatiquement",
+        "relaunch_warn": "Avertissement : impossible de relancer MacLaunch automatiquement",
         "release_notes": "Notes de version : {url}",
         "update_complete": "Mise à jour terminée : {tag}",
         "update_elapsed": "Mise à jour effectuée en {seconds}s",
@@ -248,7 +248,7 @@ STRINGS = {
         "install_prepare": "Preparando instalación en {path}",
         "requires_admin": "Se requieren privilegios de administrador. Introduzca la contraseña si se le solicita.",
         "install_complete": "Instalación completada",
-        "relaunch_warn": "Advertencia: no se pudo relanzar LaunchNext automáticamente",
+        "relaunch_warn": "Advertencia: no se pudo relanzar MacLaunch automáticamente",
         "release_notes": "Notas de la versión: {url}",
         "update_complete": "Actualización completada: {tag}",
         "update_elapsed": "Actualización terminada en {seconds} s",
@@ -282,7 +282,7 @@ STRINGS = {
         "install_prepare": "Installation in {path} wird vorbereitet",
         "requires_admin": "Administratorrechte erforderlich. Geben Sie Ihr Passwort ein, wenn Sie dazu aufgefordert werden.",
         "install_complete": "Installation abgeschlossen",
-        "relaunch_warn": "Warnung: LaunchNext konnte nicht automatisch neu gestartet werden",
+        "relaunch_warn": "Warnung: MacLaunch konnte nicht automatisch neu gestartet werden",
         "release_notes": "Versionshinweise: {url}",
         "update_complete": "Aktualisierung abgeschlossen: {tag}",
         "update_elapsed": "Aktualisierung abgeschlossen in {seconds} s",
@@ -316,7 +316,7 @@ STRINGS = {
         "install_prepare": "Подготовка установки в {path}",
         "requires_admin": "Требуются права администратора. Введите пароль, если будет запрос.",
         "install_complete": "Установка завершена",
-        "relaunch_warn": "Предупреждение: не удалось автоматически перезапустить LaunchNext",
+        "relaunch_warn": "Предупреждение: не удалось автоматически перезапустить MacLaunch",
         "release_notes": "Описание релиза: {url}",
         "update_complete": "Обновление завершено: {tag}",
         "update_elapsed": "Обновление заняло {seconds} с",
@@ -350,7 +350,7 @@ STRINGS = {
         "install_prepare": "{path} में इंस्टॉल की तैयारी",
         "requires_admin": "प्रशासक अधिकार आवश्यक हैं। अनुरोध होने पर पासवर्ड दर्ज करें।",
         "install_complete": "इंस्टॉलेशन पूरा",
-        "relaunch_warn": "चेतावनी: LaunchNext को स्वतः पुनः खोलने में असफल",
+        "relaunch_warn": "चेतावनी: MacLaunch को स्वतः पुनः खोलने में असफल",
         "release_notes": "रिलीज़ नोट्स: {url}",
         "update_complete": "अपडेट पूरा: {tag}",
         "update_elapsed": "अपडेट को {seconds} सेकंड लगे",
@@ -384,7 +384,7 @@ STRINGS = {
         "install_prepare": "Đang chuẩn bị cài đặt vào {path}",
         "requires_admin": "Cần quyền quản trị. Nhập mật khẩu khi được yêu cầu.",
         "install_complete": "Cài đặt hoàn tất",
-        "relaunch_warn": "Cảnh báo: Không thể mở lại LaunchNext tự động",
+        "relaunch_warn": "Cảnh báo: Không thể mở lại MacLaunch tự động",
         "release_notes": "Ghi chú phát hành: {url}",
         "update_complete": "Cập nhật hoàn tất: {tag}",
         "update_elapsed": "Hoàn tất sau {seconds} giây",
@@ -607,7 +607,7 @@ class CursesSession:
         self.stdscr = stdscr
         self.status_line: Optional[str] = None
         self.footer: Optional[str] = None
-        self.title = "LaunchNext Updater"
+        self.title = "MacLaunch Updater"
         self.progress_label: Optional[str] = None
         self.progress_current: int = 0
         self.progress_total: int = 0
@@ -1004,7 +1004,7 @@ def execute_update(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="LaunchNext updater")
+    parser = argparse.ArgumentParser(description="MacLaunch updater")
     parser.add_argument("--tag")
     parser.add_argument("--asset-pattern", default=DEFAULT_PATTERN)
     parser.add_argument("--install-dir")
@@ -1016,7 +1016,7 @@ def main() -> int:
     parser.add_argument("--hold-window", action="store_true")
     args = parser.parse_args()
 
-    base_dir = Path.home() / "Library" / "Application Support" / "LaunchNext" / "updates"
+    base_dir = Path.home() / "Library" / "Application Support" / "MacLaunch" / "updates"
     log_path = base_dir / LOG_NAME
     config_path = base_dir / CONFIG_NAME
     config = load_config(config_path)

@@ -3,7 +3,7 @@ import Darwin
 
 @main
 struct SwiftUpdater {
-    private static let defaultInstallPath = "/Applications/LaunchNext.app"
+    private static let defaultInstallPath = "/Applications/MacLaunch.app"
 
     struct UpdateSuccess {
         let message: String
