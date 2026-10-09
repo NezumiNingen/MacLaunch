@@ -35,7 +35,7 @@ If macOS blocks first launch, open the app once, then choose Open Anyway in Syst
 - ✅ **Kéo ứng dụng trực tiếp vào Dock** - có sẵn với engine Core Animation
 - ✅ **Trung tâm cập nhật với release notes Markdown** - trải nghiệm cập nhật trong ứng dụng phong phú hơn
 - ✅ **Công cụ sao lưu và khôi phục** - xuất và phục hồi an toàn hơn
-- ✅ **Hỗ trợ trợ năng và tay cầm** - cải thiện phản hồi giọng nói và điều hướng bằng controller
+- ✅ **Hỗ trợ trợ năng và phản hồi bằng giọng nói** - cải thiện khả năng truy cập và thông báo bằng giọng nói
 - ✅ **Hỗ trợ đa ngôn ngữ** - phạm vi bản địa hóa rộng hơn
 
 ## Những gì macOS Tahoe đã lấy mất

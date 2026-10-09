@@ -39,7 +39,7 @@ Building from source? See [Configure local code signing](#configure-local-code-s
 - ✅ **CLI / TUI support** - inspect and operate your layout from the terminal
 - ✅ **Core Animation folders** - folder content supports paged and vertical scroll layouts
 - ✅ **Better context menus** - Show in Finder, Copy App Path, Rename Folder, and configured uninstall actions
-- ✅ **Backup, controller, and voice support improvements** - better reliability and accessibility
+- ✅ **Backup and voice support improvements** - better reliability and accessibility
 
 ### What We Lost in macOS Tahoe
 - ❌ No custom app organization
