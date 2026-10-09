@@ -76,7 +76,7 @@ LaunchNext सिस्टम Launchpad डेटाबेस को सीध�
 1. **रिपॉजिटरी क्लोन करें**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Xcode में खोलें**

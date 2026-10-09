@@ -76,7 +76,7 @@ LaunchNext může číst přímo ze systémové databáze Launchpadu:
 1. **Klonovat repozitář**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Otevřít v Xcode**

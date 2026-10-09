@@ -78,7 +78,7 @@ LaunchNext 可以直接读取系统 Launchpad 数据库：
 1. **克隆仓库**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **在 Xcode 中打开**

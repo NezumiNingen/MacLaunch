@@ -86,7 +86,7 @@ Odczytuje dane bezpośrednio z systemowej bazy Launchpada:
 1. **Sklonuj repozytorium**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Otwórz w Xcode**

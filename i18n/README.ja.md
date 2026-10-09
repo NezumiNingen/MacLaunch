@@ -76,7 +76,7 @@ LaunchNext はシステム Launchpad データベースを直接読み取れま�
 1. **リポジトリをクローン**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Xcode で開く**

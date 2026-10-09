@@ -76,7 +76,7 @@ LaunchNext может напрямую читать системную базу 
 1. **Клонируйте репозиторий**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Откройте в Xcode**

@@ -77,7 +77,7 @@ LaunchNext는 시스템 Launchpad 데이터베이스를 직접 읽을 수 있어
 1. **저장소 복제**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Xcode에서 열기**

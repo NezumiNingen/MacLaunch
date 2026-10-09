@@ -78,7 +78,7 @@ Reads directly from the system Launchpad database:
 1. **Clone the repository**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Open in Xcode**

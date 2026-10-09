@@ -76,7 +76,7 @@ LaunchNext có thể đọc trực tiếp cơ sở dữ liệu Launchpad của h
 1. **Clone kho lưu trữ**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Mở bằng Xcode**

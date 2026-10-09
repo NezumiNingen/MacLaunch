@@ -76,7 +76,7 @@ LaunchNext puede leer directamente la base de datos del sistema Launchpad:
 1. **Clonar el repositorio**
    ```bash
    git clone https://github.com/NezumiNingen/MacLaunch.git
-   cd LaunchNext
+   cd MacLaunch
    ```
 
 2. **Abrir en Xcode**
