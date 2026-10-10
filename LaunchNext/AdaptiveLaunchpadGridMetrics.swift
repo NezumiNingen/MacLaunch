@@ -1,8 +1,10 @@
 import CoreGraphics
 
-/// Chooses the largest grid that fits the current Launchpad viewport while
-/// keeping a consistent minimum cell pitch across displays.
+/// Chooses the largest grid that fits the current viewport, scaling the
+/// minimum cell pitch with the user's icon-size preference.
 struct AdaptiveLaunchpadGridMetrics: Equatable {
+    static let defaultIconScale: Double = 1.05
+    static let iconScaleRange: ClosedRange<Double> = 0.75...1.65
     static let minimumColumnPitch: CGFloat = 146
     static let minimumRowPitch: CGFloat = 108
     static let minimumColumns = 1
@@ -15,16 +17,19 @@ struct AdaptiveLaunchpadGridMetrics: Equatable {
 
     static func calculate(for availableSize: CGSize,
                           columnSpacing: CGFloat = 20,
-                          rowSpacing: CGFloat = 14) -> Self {
+                          rowSpacing: CGFloat = 14,
+                          iconScale: Double = defaultIconScale) -> Self {
         let width = availableSize.width.isFinite ? max(0, availableSize.width) : 0
         let height = availableSize.height.isFinite ? max(0, availableSize.height) : 0
+        let finiteScale = iconScale.isFinite ? iconScale : defaultIconScale
+        let scaleFactor = CGFloat(max(0.5, finiteScale / defaultIconScale))
         let columns = countThatFits(length: width,
                                     spacing: columnSpacing,
-                                    pitch: minimumColumnPitch,
+                                    pitch: minimumColumnPitch * scaleFactor,
                                     range: minimumColumns...maximumColumns)
         let rows = countThatFits(length: height,
                                  spacing: rowSpacing,
-                                 pitch: minimumRowPitch,
+                                 pitch: minimumRowPitch * scaleFactor,
                                  range: minimumRows...maximumRows)
         return Self(columns: columns, rows: rows)
     }

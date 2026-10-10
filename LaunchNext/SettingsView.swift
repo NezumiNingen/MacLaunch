@@ -2461,6 +2461,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
 
     private var appearancePrimarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            appIconSizeControl
+
             HStack {
                 Text(appStore.localized(.useLocalizedThirdPartyTitles))
                 Spacer()
@@ -2510,6 +2512,53 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var appIconSizeControl: some View {
+        let scalePercent = Int((appStore.itemIconScale / AppStore.defaultIconScale * 100).rounded())
+
+        return VStack(alignment: .leading, spacing: 10) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    Text(appStore.localized(.iconSize))
+                        .font(.headline)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
+                    Text("\(scalePercent)%")
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(appStore.localized(.iconSize))
+                        .font(.headline)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("\(scalePercent)%")
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Slider(value: $appStore.itemIconScale, in: AppStore.itemIconScaleRange)
+                .accessibilityLabel(Text(appStore.localized(.iconSize)))
+                .accessibilityValue(Text("\(scalePercent)%"))
+
+            HStack {
+                Image(systemName: "minus.magnifyingglass")
+                Spacer()
+                Image(systemName: "plus.magnifyingglass")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
+        }
+        .padding(14)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(.white.opacity(0.12), lineWidth: 0.8)
         }
     }
 

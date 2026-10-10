@@ -373,7 +373,6 @@ final class AppStore: ObservableObject {
         defaults.set(true, forKey: windowOpenAnimationKey)
         defaults.set(fixedWindowAnimationDuration, forKey: windowAnimationDurationKey)
         defaults.set(fixedWindowAnimationDuration, forKey: "animationDuration")
-        defaults.set(defaultIconScale, forKey: "iconScale")
         defaults.set(true, forKey: folderLiquidGlassKey)
         defaults.set(true, forKey: folderQuickLaunchEnabledKey)
         defaults.set(true, forKey: folderPreviewHighResKey)
@@ -414,7 +413,9 @@ final class AppStore: ObservableObject {
     // Change these source constants to alter the fixed appearance policy.
     private static let classicLaunchpadAlwaysEnabled = true
     private static let iconLabelsAlwaysVisible = true
-    private static let defaultIconScale: Double = 1.05
+    static let defaultIconScale = AdaptiveLaunchpadGridMetrics.defaultIconScale
+    static let itemIconScaleRange = AdaptiveLaunchpadGridMetrics.iconScaleRange
+    private static let itemIconScaleKey = "launchpadItemIconScale"
     private static let defaultIconLabelFontSize: Double = 11.5
     static let defaultScrollSensitivity: Double = 0.2
     private static let fixedHoverMagnificationScale: Double = 1.0
@@ -433,6 +434,11 @@ final class AppStore: ObservableObject {
     private static let defaultLaunchpadOpenSound = "Submarine"
     private static let defaultLaunchpadCloseSound = "Glass"
     private static let defaultNavigationSound = "Tink"
+
+    private static func loadItemIconScale(from defaults: UserDefaults = .standard) -> Double {
+        let stored = defaults.object(forKey: itemIconScaleKey) as? Double ?? defaultIconScale
+        return min(max(stored, itemIconScaleRange.lowerBound), itemIconScaleRange.upperBound)
+    }
     fileprivate static let updateNotificationCategoryIdentifier = "maclaunch.update.category"
     fileprivate static let updateNotificationDownloadActionIdentifier = "maclaunch.update.download"
     private var hasConfiguredUpdateNotifications = false
@@ -595,6 +601,7 @@ final class AppStore: ObservableObject {
         defaults.set(false, forKey: Self.activePressEffectKey)
         defaults.set(Self.defaultActivePressScale, forKey: Self.activePressScaleKey)
         defaults.set(Self.defaultIconScale, forKey: "iconScale")
+        defaults.set(Self.defaultIconScale, forKey: Self.itemIconScaleKey)
         defaults.set(Self.defaultIconLabelFontSize, forKey: "iconLabelFontSize")
         defaults.set(IconLabelFontWeightOption.medium.rawValue, forKey: Self.iconLabelFontWeightKey)
         defaults.set(Self.fixedWindowAnimationDuration, forKey: "animationDuration")
@@ -620,6 +627,7 @@ final class AppStore: ObservableObject {
     private func reloadAppearancePreferencesFromDefaults() {
         let defaults = UserDefaults.standard
         Self.enforceFixedAppearancePreferences(in: defaults)
+        itemIconScale = Self.loadItemIconScale(from: defaults)
 
         sidebarIconPreset = .large
 
@@ -1045,11 +1053,28 @@ final class AppStore: ObservableObject {
     }
     
     @Published private(set) var gridColumnsPerPage = AdaptiveLaunchpadGridMetrics.calculate(
-        for: NSScreen.main?.frame.size ?? CGSize(width: 1280, height: 800)
+        for: NSScreen.main?.frame.size ?? CGSize(width: 1280, height: 800),
+        iconScale: AppStore.loadItemIconScale()
     ).columns
     @Published private(set) var gridRowsPerPage = AdaptiveLaunchpadGridMetrics.calculate(
-        for: NSScreen.main?.frame.size ?? CGSize(width: 1280, height: 800)
+        for: NSScreen.main?.frame.size ?? CGSize(width: 1280, height: 800),
+        iconScale: AppStore.loadItemIconScale()
     ).rows
+    private var adaptiveGridViewportSize: CGSize?
+    private var adaptiveGridMetricsUpdateScheduled = false
+
+    @Published var itemIconScale: Double = AppStore.loadItemIconScale() {
+        didSet {
+            let clamped = min(max(itemIconScale, Self.itemIconScaleRange.lowerBound), Self.itemIconScaleRange.upperBound)
+            guard clamped == itemIconScale else {
+                itemIconScale = clamped
+                return
+            }
+            guard itemIconScale != oldValue else { return }
+            UserDefaults.standard.set(itemIconScale, forKey: Self.itemIconScaleKey)
+            refreshAdaptiveGridMetricsForIconScale()
+        }
+    }
     @Published private(set) var iconColumnSpacing = 20.0
     @Published private(set) var iconRowSpacing = 14.0
 
@@ -2273,7 +2298,7 @@ final class AppStore: ObservableObject {
         }
     }
 
-    var iconScale: Double { Self.defaultIconScale }
+    var iconScale: Double { itemIconScale }
 
     func configure(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -3790,6 +3815,7 @@ final class AppStore: ObservableObject {
             Self.activePressEffectKey,
             Self.activePressScaleKey,
             "iconScale",
+            Self.itemIconScaleKey,
             "iconLabelFontSize",
             Self.iconLabelFontWeightKey,
             "animationDuration",
@@ -4785,15 +4811,34 @@ final class AppStore: ObservableObject {
     }
 
     func updateAdaptiveGridMetrics(for availableSize: CGSize) {
-        let metrics = AdaptiveLaunchpadGridMetrics.calculate(for: availableSize,
-                                                              columnSpacing: CGFloat(iconColumnSpacing),
-                                                              rowSpacing: CGFloat(iconRowSpacing))
-        guard metrics.columns != gridColumnsPerPage || metrics.rows != gridRowsPerPage else { return }
+        adaptiveGridViewportSize = availableSize
+        scheduleAdaptiveGridMetricsUpdate()
+    }
+
+    private func refreshAdaptiveGridMetricsForIconScale() {
+        if let adaptiveGridViewportSize {
+            updateAdaptiveGridMetrics(for: adaptiveGridViewportSize)
+        } else if let screenSize = NSScreen.main?.visibleFrame.size {
+            updateAdaptiveGridMetrics(for: screenSize)
+        }
+    }
+
+    private func scheduleAdaptiveGridMetricsUpdate() {
+        guard !adaptiveGridMetricsUpdateScheduled else { return }
+        adaptiveGridMetricsUpdateScheduled = true
         DispatchQueue.main.async { [weak self] in
-            guard let self,
-                  metrics.columns != self.gridColumnsPerPage || metrics.rows != self.gridRowsPerPage else { return }
-            self.gridColumnsPerPage = metrics.columns
-            self.gridRowsPerPage = metrics.rows
+            guard let self else { return }
+            self.adaptiveGridMetricsUpdateScheduled = false
+            guard let viewportSize = self.adaptiveGridViewportSize else { return }
+            let metrics = AdaptiveLaunchpadGridMetrics.calculate(for: viewportSize,
+                                                                  columnSpacing: CGFloat(self.iconColumnSpacing),
+                                                                  rowSpacing: CGFloat(self.iconRowSpacing),
+                                                                  iconScale: self.itemIconScale)
+            guard metrics.columns != self.gridColumnsPerPage || metrics.rows != self.gridRowsPerPage else { return }
+            withAnimation(.easeInOut(duration: 0.18)) {
+                self.gridColumnsPerPage = metrics.columns
+                self.gridRowsPerPage = metrics.rows
+            }
             self.handleGridConfigurationChange()
         }
     }

@@ -1626,7 +1626,7 @@ struct LaunchpadView: View {
 
             if appStore.useCAGridRenderer {
                 CAFolderPresentation(appStore: appStore, controller: folderPresentation,
-                    iconSize: currentIconSize * CGFloat(min(max(appStore.iconScale, 0.6), 1.15)),
+                    iconSize: currentIconSize * CGFloat(AppStore.defaultIconScale),
                     onClose: { closePresentedFolder() }, onLaunchApp: { launchApp($0) },
                     backgroundLabelSample: resolvedBackgroundLabelSample,
                     backgroundLabelTints: backgroundLabelTints,
@@ -1675,7 +1675,7 @@ struct LaunchpadView: View {
                     FolderView(
                         appStore: appStore,
                         folder: folderBinding,
-                        preferredIconSize: currentIconSize * CGFloat(min(max(appStore.iconScale, 0.6), 1.15)),
+                        preferredIconSize: currentIconSize * CGFloat(AppStore.defaultIconScale),
                         initialRevealAppPath: folderAppToReveal,
                         onClose: {
                             let closingFolder = appStore.openFolder
@@ -1729,8 +1729,17 @@ struct LaunchpadView: View {
             return max(40, width)
         }()
 
-        // Slightly larger icons in a denser grid that fills each page.
-        let iconSize: CGFloat = min(columnWidth, appHeight) * CGFloat(min(max(appStore.iconScale, 0.6), 1.15)) * 0.85
+        let baselineMetrics = AdaptiveLaunchpadGridMetrics.calculate(
+            for: CGSize(width: availableWidth, height: availableHeight),
+            columnSpacing: config.columnSpacing,
+            rowSpacing: config.rowSpacing,
+            iconScale: AppStore.defaultIconScale
+        )
+        let baselineColumnWidth = max(40, (availableWidth - config.columnSpacing * CGFloat(baselineMetrics.columns - 1)) / CGFloat(baselineMetrics.columns))
+        let baselineAppHeight = max(56, (availableHeight - config.rowSpacing * CGFloat(baselineMetrics.rows - 1)) / CGFloat(baselineMetrics.rows))
+        let targetIconSize = min(baselineColumnWidth, baselineAppHeight) * CGFloat(appStore.itemIconScale) * 0.85
+        let cellIconLimit = min(columnWidth, appHeight) * 0.98
+        let iconSize = min(targetIconSize, cellIconLimit)
         let effectivePageWidth = geo.size.width + config.pageSpacing
 
         if appStore.isInitialLoading {
@@ -1822,6 +1831,11 @@ struct LaunchpadView: View {
                     }
                 }
                 .onChange(of: geo.size) {
+                    DispatchQueue.main.async {
+                        captureGridGeometry(geo, columnWidth: columnWidth, appHeight: appHeight, iconSize: iconSize)
+                    }
+                }
+                .onChange(of: appStore.itemIconScale) { _, _ in
                     DispatchQueue.main.async {
                         captureGridGeometry(geo, columnWidth: columnWidth, appHeight: appHeight, iconSize: iconSize)
                     }
@@ -1935,6 +1949,11 @@ struct LaunchpadView: View {
             }
             .onChange(of: appStore.gridRefreshTrigger) { _, _ in
                 if draggingItem == nil { displayedGridRefreshID = appStore.gridRefreshTrigger }
+                DispatchQueue.main.async {
+                    captureGridGeometry(geo, columnWidth: columnWidth, appHeight: appHeight, iconSize: iconSize)
+                }
+            }
+            .onChange(of: appStore.itemIconScale) { _, _ in
                 DispatchQueue.main.async {
                     captureGridGeometry(geo, columnWidth: columnWidth, appHeight: appHeight, iconSize: iconSize)
                 }
