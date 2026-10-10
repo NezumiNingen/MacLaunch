@@ -89,8 +89,8 @@ For the folder-internal reorder handoff alone:
 LAUNCHNEXT_REORDER_CHECK_ONLY=1 python3 scripts/diagnostics/run_folder_presentation_integration.py
 ```
 
-This mode clears the bitmap cache before each move and checks that paged and
-vertical reorders retain the same live layers, bitmaps and load tokens. It also
+This mode clears the bitmap cache before each move and checks that paged
+reorders retain the same live layers, bitmaps and load tokens. It also
 checks that a rejected model update restores the source instead of leaving an
 invisible cell. It does not measure drag smoothness or frame rate.
 Moved, rejected and unchanged drops use the outer grid's 0.18-second cubic
@@ -111,7 +111,7 @@ required stored properties or initializer shape change.
 Checks intermediate material geometry and rounded masking, prepared icon bitmaps,
 movement of icons beyond the nine preview tiles, delayed labels, final layout, source restoration and
 grid deallocation; compact/fullscreen-sized panels with folder glass on/off;
-large paged and vertical folders; rapid reversal; disabled animations; teardown;
+large paged folders; rapid reversal; teardown;
 drag-out handoff; and resizing during opening. It requests no screen capture
 permission and does not load user layouts. These checks establish geometry and
 lifecycle behavior, not visual quality, frame rate, GPU cost or macOS 26 parity.
@@ -134,10 +134,11 @@ with native Bezier timing functions; there is no per-frame Swift update. Icons,
 material, rounded masking and background depth share that trajectory and clock.
 Clicking the same folder during closing reverses the existing presentation;
 clicking a different folder finishes dismissal and forwards the new gesture.
-Actual `NSWindow.sendEvent` checks cover outside-click cancellation while opening,
-the first click during closing, and reopening when AppKit classifies the gesture
-as a double click. The SwiftUI fixture also checks the outgoing dimming overlay
-does not consume that click. These tests do not measure physical input latency.
+Actual `NSWindow.sendEvent` checks cover the cold-folder opening gesture while
+icons are still preparing, outside-click dismissal after opening, the first
+click during closing, and reopening when AppKit classifies the gesture as a
+double click. The SwiftUI fixture also checks the outgoing dimming overlay does
+not consume that click. These tests do not measure physical input latency.
 Transition layers borrow existing CGImages and are removed at completion; the
 checks do not measure the compositor's transient mask/material memory cost.
 

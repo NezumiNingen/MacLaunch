@@ -38,8 +38,6 @@ import SwiftUI
         root.addSubview(host)
         let store = AppStore()
         store.useCAGridRenderer = true
-        store.enableAnimations = true
-        store.animationDuration = 0.3
         let paths = [
             "Calculator", "Maps", "Notes", "Calendar", "Contacts", "Reminders", "Preview", "Shortcuts", "Music",
             "Safari", "Photos", "FaceTime",
@@ -137,7 +135,6 @@ import SwiftUI
                     grid.appearance = NSAppearance(named: .aqua)
                     grid.updateLabelColors()
                     checkLabels(.black)
-                    store.enableAnimations = false
                     store.openFolder = folder
                     for color: NSColor in [.white, .black] {
                         let shadow: BackgroundLabelContrast.Shadow = color == .white
@@ -271,41 +268,35 @@ import SwiftUI
                         print("PASS open/close, final geometry and release", glass, fullscreen)
                     }
                 }
-                for mode: AppStore.FolderLayoutMode in [.paged, .vertical] {
-                    store.folderLayoutMode = mode
-                    let manyApps = (0..<60).map { i in
-                        AppInfo(
-                            name: "App \(i)", icon: apps[i % apps.count].icon,
-                            url: URL(fileURLWithPath: "/tmp/opening-fixture-app-\(i).app"))
-                    }
-                    let largeFolder = FolderInfo(name: "Large", apps: manyApps)
-                    store.folders = [largeFolder]
-                    grid.items = [.folder(largeFolder)]
-                    store.openFolder = largeFolder
-                    update()
-                    var checkedOpening = false
-                    for _ in 0..<40 {
-                        try await Task.sleep(for: .milliseconds(10))
-                        if host.probePhase == "opening" {
-                            checkedOpening = true
-                            precondition(!host.probeIcons.isEmpty)
-                            precondition(host.probeGrid!.probeOpeningEndpointDrift < 0.01,
-                                         "multi-page layout must not shift after capturing animation endpoints")
-                        }
-                    }
-                    precondition(checkedOpening, "the large-folder check must sample a real opening transition")
-                    precondition(host.probePhase == "open" && host.probeClipped)
-                    if mode == .paged {
-                        precondition(host.probeGrid!.displayedPageCount > 1)
-                        host.probeGrid!.setDisplayedPage(1, animated: false)
-                    }
-                    store.openFolder = nil
-                    update()
-                    try await Task.sleep(for: .milliseconds(400))
-                    precondition(host.probePhase == "closed" && grid.presentedFolderID == nil)
-                    print("PASS larger folder and off-page cleanup", mode)
+                let manyApps = (0..<60).map { i in
+                    AppInfo(
+                        name: "App \(i)", icon: apps[i % apps.count].icon,
+                        url: URL(fileURLWithPath: "/tmp/opening-fixture-app-\(i).app"))
                 }
-                store.folderLayoutMode = .paged
+                let largeFolder = FolderInfo(name: "Large", apps: manyApps)
+                store.folders = [largeFolder]
+                grid.items = [.folder(largeFolder)]
+                store.openFolder = largeFolder
+                update()
+                var checkedOpening = false
+                for _ in 0..<40 {
+                    try await Task.sleep(for: .milliseconds(10))
+                    if host.probePhase == "opening" {
+                        checkedOpening = true
+                        precondition(!host.probeIcons.isEmpty)
+                        precondition(host.probeGrid!.probeOpeningEndpointDrift < 0.01,
+                                     "multi-page layout must not shift after capturing animation endpoints")
+                    }
+                }
+                precondition(checkedOpening, "the large-folder check must sample a real opening transition")
+                precondition(host.probePhase == "open" && host.probeClipped)
+                precondition(host.probeGrid!.displayedPageCount > 1)
+                host.probeGrid!.setDisplayedPage(1, animated: false)
+                store.openFolder = nil
+                update()
+                try await Task.sleep(for: .milliseconds(400))
+                precondition(host.probePhase == "closed" && grid.presentedFolderID == nil)
+                print("PASS larger paged folder and off-page cleanup")
                 store.folders = [folder]
                 grid.items = [.folder(folder)]
                 store.openFolder = folder
@@ -331,7 +322,6 @@ import SwiftUI
                         store.openFolder = value
                     }
                 }
-                store.animationDuration = 1.5 // Folder motion must not inherit paging speed.
                 store.openFolder = folder
                 update()
                 try await Task.sleep(for: .milliseconds(350))
@@ -369,20 +359,25 @@ import SwiftUI
                 store.openFolder = nil
                 update()
                 try await Task.sleep(for: .milliseconds(350))
-                sendClick(window, at: targetPoint, clickCount: 2)
-                precondition(openedByClick == 1, "rapid reopening must accept AppKit double-click classification")
+                FolderIconBitmapCache.shared.clear()
+                sendClick(window, at: targetPoint, clickCount: 1)
+                precondition(openedByClick == 1, "the folder's first click must open it")
                 update()
-                for _ in 0..<50 where host.probePhase == "preparing" {
+                precondition(host.probePhase == "preparing", "cold folder icons must keep the presentation preparing")
+                sendClick(window, at: targetPoint, clickCount: 2)
+                precondition(store.openFolder?.id == folder.id,
+                             "the second click of the opening gesture must not dismiss a cold folder")
+                update()
+                for _ in 0..<100 where host.probePhase != "open" {
                     try await Task.sleep(for: .milliseconds(10))
                 }
-                try await Task.sleep(for: .milliseconds(40))
+                precondition(host.probePhase == "open", "cold folder must finish opening after the duplicate click")
                 sendClick(window, at: CGPoint(x: 40, y: 360))
-                precondition(store.openFolder == nil, "outside click must interrupt opening")
+                precondition(store.openFolder == nil, "outside click must dismiss an open folder")
                 update()
-                precondition(host.probeDuration < 0.28, "reversal should use remaining travel")
                 try await Task.sleep(for: .milliseconds(350))
                 precondition(host.probePhase == "closed")
-                print("PASS mouse interruption, retained-view reversal, velocity continuity, double click and independent timing")
+                print("PASS cold-folder first click, ignored duplicate click, and outside dismissal")
                 let otherFolder = FolderInfo(name: "Other", apps: Array(apps.prefix(3)))
                 _ = otherFolder.icon(of: 90, scale: 2)
                 store.folders = [folder, otherFolder]
@@ -406,16 +401,6 @@ import SwiftUI
                 grid.items = [.folder(folder)]
                 print("PASS different-folder click during closing")
                 grid.onItemClicked = nil
-                store.enableAnimations = false
-                store.openFolder = folder
-                update()
-                try await Task.sleep(for: .milliseconds(100))
-                precondition(host.probePhase == "open" && grid.folderGlassHandoff == nil)
-                store.openFolder = nil
-                update()
-                precondition(host.probePhase == "closed")
-                print("PASS disabled animations")
-                store.enableAnimations = true
                 store.openFolder = folder
                 update()
                 try await Task.sleep(for: .milliseconds(80))

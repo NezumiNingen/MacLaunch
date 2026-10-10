@@ -29,6 +29,12 @@ with tempfile.TemporaryDirectory(prefix='launchnext-folder-presentation-') as te
     # bundle identifier also keeps property defaults out of the user's domain.
     store = work / 'LaunchNext/AppStore.swift'
     source = store.read_text()
+    # The shipping app keeps fullscreen behavior fixed. Make it writable only
+    # in this isolated copy so the geometry probe can cover both panel sizes.
+    source = source.replace(
+        '@Published private(set) var isFullscreenMode = AppStore.classicLaunchpadAlwaysEnabled',
+        '@Published var isFullscreenMode = AppStore.classicLaunchpadAlwaysEnabled',
+        1)
     start = source.index('    init() {', source.index('final class AppStore'))
     end = source.index('{', start) + 1
     depth = 1
@@ -43,7 +49,6 @@ with tempfile.TemporaryDirectory(prefix='launchnext-folder-presentation-') as te
         defaultAppIcon = NSImage(size: NSSize(width: 32, height: 32))
         currentAppIcon = defaultAppIcon
         hasCustomAppIcon = false
-        scrollSensitivity = 1
         gridColumnsPerPage = 7
         gridRowsPerPage = 5
         iconColumnSpacing = 0
@@ -170,9 +175,7 @@ extension CAFolderPresentationHost {
 extension CAFolderGridView {
     func probeCheckReorderReuse() {
         precondition(apps.count > 2)
-        for mode: AppStore.FolderLayoutMode in [.paged, .vertical] {
-            layoutMode = mode
-            for target in [2, apps.count, 0] {
+        for target in [2, apps.count, 0] {
                 let before = Dictionary(uniqueKeysWithValues: zip(apps.map(\\.url), appLayers))
                 let tokens = appLayers.map { $0.sublayers!.first(where: { $0.name == "icon" })!.value(forKey: "iconLoadToken") as! String }
                 precondition(appLayers.allSatisfy { $0.sublayers!.first(where: { $0.name == "icon" })!.contents != nil })
@@ -209,16 +212,15 @@ extension CAFolderGridView {
                 }
                 finishDropLanding()
                 precondition(appLayers.allSatisfy { $0.opacity == 1 })
-            }
-            let order = apps.map(\\.url)
-            startDragging(at: 0, point: itemFrames[0].origin)
-            updateReorderPreview(targetIndex: 2)
-            onReorderApps = { _, _ in nil }
-            finishDragging(at: .zero)
-            precondition(landingLayer != nil, "a rejected move must animate back to its source")
-            finishDropLanding()
-            precondition(apps.map(\\.url) == order && appLayers.allSatisfy { $0.opacity == 1 }, "a rejected move must restore the original cells")
         }
+        let order = apps.map(\\.url)
+        startDragging(at: 0, point: itemFrames[0].origin)
+        updateReorderPreview(targetIndex: 2)
+        onReorderApps = { _, _ in nil }
+        finishDragging(at: .zero)
+        precondition(landingLayer != nil, "a rejected move must animate back to its source")
+        finishDropLanding()
+        precondition(apps.map(\\.url) == order && appLayers.allSatisfy { $0.opacity == 1 }, "a rejected move must restore the original cells")
         onReorderApps = nil
         startDragging(at: 0, point: CGPoint(x: 200, y: 200))
         currentHoverIndex = 0

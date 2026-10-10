@@ -268,6 +268,10 @@ final class CAFolderPresentationHost: NSView {
             return
         }
         let point = convert(event.locationInWindow, from: nil)
+        // A cold folder can still be preparing when AppKit delivers the second
+        // click of the gesture that opened it. Do not mistake that multi-click
+        // for a request to dismiss the new presentation.
+        if phase == .preparing && event.clickCount > 1 { return }
         if phase == .preparing || !presentedGlassFrame.contains(point) {
             onRequestClose?()
         }
