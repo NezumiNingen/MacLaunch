@@ -240,6 +240,10 @@ import SwiftUI
                         weak var releasedGrid = host.probeGrid
                         store.openFolder = nil
                         update()
+                        for _ in 0..<20 where host.probePhase != "closing" {
+                            try await Task.sleep(for: .milliseconds(5))
+                        }
+                        precondition(host.probePhase == "closing", "store-driven close must start after the representable update")
                         weak var handoffGlass = grid.folderGlassOverlay?.probeHandoffGlass
                         if glass {
                             precondition(handoffGlass != nil, "close must prepare the actual grid glass without its thumbnail")
@@ -330,6 +334,10 @@ import SwiftUI
                 let targetPoint = CGPoint(x: target.midX, y: target.midY)
                 store.openFolder = nil
                 update()
+                for _ in 0..<20 where host.probePhase != "closing" {
+                    try await Task.sleep(for: .milliseconds(5))
+                }
+                precondition(host.probePhase == "closing")
                 precondition(abs(host.probeDuration - 0.28) < 0.001)
                 // Interrupt after the real grid material has begun fading in.
                 try await Task.sleep(for: .milliseconds(200))
@@ -364,6 +372,11 @@ import SwiftUI
                 precondition(openedByClick == 1, "the folder's first click must open it")
                 update()
                 precondition(host.probePhase == "preparing", "cold folder icons must keep the presentation preparing")
+                precondition(!host.probeHasHosting && host.probeHasPendingRoot,
+                             "nested folder hosting must wait until the SwiftUI update has returned")
+                try await Task.sleep(for: .milliseconds(10))
+                precondition(host.probeHasHosting && !host.probeHasPendingRoot,
+                             "folder content must install on the next run-loop turn")
                 sendClick(window, at: targetPoint, clickCount: 2)
                 precondition(store.openFolder?.id == folder.id,
                              "the second click of the opening gesture must not dismiss a cold folder")
@@ -378,6 +391,23 @@ import SwiftUI
                 try await Task.sleep(for: .milliseconds(350))
                 precondition(host.probePhase == "closed")
                 print("PASS cold-folder first click, ignored duplicate click, and outside dismissal")
+                FolderIconBitmapCache.shared.clear()
+                store.openFolder = folder
+                update()
+                for _ in 0..<20 where !host.probeHasHosting {
+                    try await Task.sleep(for: .milliseconds(5))
+                }
+                precondition(host.probePhase == "preparing" && host.probeHasHosting,
+                             "cold folder must be preparing before the blank-area dismissal check")
+                sendClick(window, at: CGPoint(x: 40, y: 360))
+                precondition(store.openFolder == nil, "blank click during preparation must request dismissal")
+                update()
+                precondition(host.probePhase == "preparing" && host.probeHasHosting,
+                             "store-driven dismissal must wait until updateNSView returns")
+                try await Task.sleep(for: .milliseconds(20))
+                precondition(host.probePhase == "closed" && !host.probeHasHosting,
+                             "deferred blank-area dismissal must release nested hosting")
+                print("PASS blank-area dismissal while a cold folder is preparing")
                 let otherFolder = FolderInfo(name: "Other", apps: Array(apps.prefix(3)))
                 _ = otherFolder.icon(of: 90, scale: 2)
                 store.folders = [folder, otherFolder]
@@ -408,6 +438,29 @@ import SwiftUI
                 precondition(host.probePhase == "closed" && grid.presentedFolderID == nil)
                 precondition(backdrop.contentFilters.isEmpty)
                 print("PASS immediate teardown")
+                // A SwiftUI representable may receive its first update before
+                // AppKit has assigned the host a nonzero frame. Opening then
+                // must defer nested hosting until window-backed geometry exists.
+                host.frame = .zero
+                store.openFolder = folder
+                update()
+                precondition(!host.probeHasHosting && host.probeHasPendingRoot,
+                             "zero-size host must keep folder content pending")
+                try await Task.sleep(for: .milliseconds(20))
+                precondition(!host.probeHasHosting && host.probeHasPendingRoot,
+                             "zero-size host must not install an NSHostingView")
+                host.frame = root.bounds
+                root.layoutSubtreeIfNeeded()
+                for _ in 0..<100 where host.probePhase != "open" {
+                    try await Task.sleep(for: .milliseconds(10))
+                }
+                precondition(host.probePhase == "open" && host.probeHasHosting,
+                             "pending folder content must install when the host gains real bounds")
+                store.openFolder = nil
+                update()
+                try await Task.sleep(for: .milliseconds(350))
+                precondition(host.probePhase == "closed")
+                print("PASS zero-size first update waits for valid host geometry")
                 store.openFolder = nil
                 update()
                 store.openFolder = folder
@@ -416,6 +469,9 @@ import SwiftUI
                 store.handoffDraggingApp = apps[0]
                 store.openFolder = nil
                 update()
+                for _ in 0..<20 where host.probePhase != "closed" {
+                    try await Task.sleep(for: .milliseconds(5))
+                }
                 precondition(host.probePhase == "closed", "drag handoff must not wait for closing")
                 store.handoffDraggingApp = nil
                 print("PASS drag handoff")
@@ -461,6 +517,44 @@ import SwiftUI
                 try await Task.sleep(for: .milliseconds(300))
                 precondition(hosted.probePhase == "closed")
                 print("PASS SwiftUI first-click reopening")
+
+                // Exercise the same ordering/membership updates as the user
+                // organizer, then open its generated folder through a real
+                // grid click rather than assigning openFolder directly.
+                UserDefaults.standard.removeObject(forKey: AppStore.automaticOrganizerFolderIDsKey)
+                let organizerApps = ["Social Media Alpha", "Social Media Beta", "Social Media Gamma"].map { name in
+                    let url = URL(fileURLWithPath: "/tmp/\(name.replacingOccurrences(of: " ", with: "" )).app")
+                    return AppInfo(name: name, icon: NSWorkspace.shared.icon(forFile: url.path), url: url)
+                }
+                store.apps = organizerApps
+                store.folders = []
+                store.items = organizerApps.map(LaunchpadItem.app)
+                let organizerResult = store.organizeAppsAutomatically()
+                let generatedFolders = store.items.compactMap { item -> FolderInfo? in
+                    if case .folder(let value) = item { return value }
+                    return nil
+                }
+                precondition(organizerResult.foldersCreated > 0 && !generatedFolders.isEmpty,
+                             "organizer fixture must create a folder")
+                precondition(Set(generatedFolders.map(\.id)).count == generatedFolders.count,
+                             "organizer must produce unique folder identifiers")
+                precondition(generatedFolders.allSatisfy { folder in
+                    Set(folder.apps.map { $0.url.standardizedFileURL.path }).count == folder.apps.count
+                }, "organized folders must not contain duplicate app paths")
+                grid.items = store.items
+                root.layoutSubtreeIfNeeded()
+                let generatedFolder = generatedFolders[0]
+                let generatedTarget = grid.folderOpeningSource(id: generatedFolder.id, atRest: true)!.plateRectInWindow
+                sendClick(window, at: CGPoint(x: generatedTarget.midX, y: generatedTarget.midY))
+                precondition(store.openFolder?.id == generatedFolder.id,
+                             "a click on an organized folder must route to that folder")
+                try await Task.sleep(for: .milliseconds(450))
+                precondition(controller.host?.probePhase == "open",
+                             "an organized folder must complete the native presentation")
+                store.openFolder = nil
+                try await Task.sleep(for: .milliseconds(350))
+                precondition(controller.host?.probePhase == "closed")
+                print("PASS organizer output opens from a real grid click")
             } catch {
                 print("FAILED", error)
                 exit(1)

@@ -201,6 +201,8 @@ struct CAFolderPresentation: NSViewRepresentable {
 final class CAFolderPresentationHost: NSView {
     weak var controller: CAFolderPresentationController?
     private var hosting: NSHostingView<FolderView>?
+    private var pendingRootView: FolderView?
+    private var contentInstallScheduled = false
     private var glass: NSGlassEffectView?
     private var glassContainer: NSView?
     private var glassClipContainer: NSView?
@@ -211,6 +213,8 @@ final class CAFolderPresentationHost: NSView {
     private var folderID: String?
     private var completion: DispatchWorkItem?
     private var transitionGeneration = 0
+    private var storeCloseGeneration = 0
+    private var storeCloseScheduled = false
     private var preparationTimeout: DispatchWorkItem?
     private var reopeningGlassFrame: CGRect?
     private var openingScheduled = false
@@ -233,6 +237,14 @@ final class CAFolderPresentationHost: NSView {
     }
     convenience init() { self.init(frame: .zero) }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            needsLayout = true
+            scheduleContentInstallation()
+        }
+    }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard phase != .closed, let hosting else { return nil }
@@ -289,7 +301,10 @@ final class CAFolderPresentationHost: NSView {
 
     override func layout() {
         super.layout()
-        guard let hosting else { return }
+        guard let hosting else {
+            scheduleContentInstallation()
+            return
+        }
         let target = panelRect
         if hosting.frame != target {
             // A resize changes the destination geometry: finish an opening, or
@@ -329,16 +344,18 @@ final class CAFolderPresentationHost: NSView {
         }
         motionEnabled = appStore.enableAnimations && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard let folder = appStore.openFolder else {
-            // An ongoing drag is handed directly to the main grid; retaining a
-            // closing panel would cover that grid and duplicate the dragged app.
-            if appStore.handoffDraggingApp != nil { dismissImmediately() }
-            else { close() }
+            // updateNSView may be called while SwiftUI is reconciling this host.
+            // Detaching the nested NSHostingView synchronously from that update
+            // can re-enter AppKit's layout/constraint traversal. Defer all
+            // store-driven closes until the representable update has returned.
+            scheduleStoreDrivenClose(appStore: appStore)
             return
         }
         fullscreen = appStore.isFullscreenMode
         widthFactor = fullscreen ? 0.7 : CGFloat(appStore.folderPopoverWidthFactor)
         heightFactor = fullscreen ? 0.7 : CGFloat(appStore.folderPopoverHeightFactor)
-        let needsNewContent = folderID != folder.id || hosting == nil
+        let hasContent = hosting != nil || pendingRootView != nil
+        let needsNewContent = folderID != folder.id || !hasContent
         if needsNewContent {
             dismissImmediately()
             folderID = folder.id
@@ -362,28 +379,12 @@ final class CAFolderPresentationHost: NSView {
                               onClose: onClose, onLaunchApp: onLaunchApp)
         if let hosting { hosting.rootView = root }
         else {
-            // Keep the clipping mask outside the transformed material subtree.
-            let clip = NSView(frame: bounds)
-            clip.wantsLayer = true
-            clip.clipsToBounds = false
-            glassClipContainer = clip
-            addSubview(clip)
-            let container = NSView(frame: bounds)
-            container.wantsLayer = true
-            container.clipsToBounds = false
-            glassContainer = container
-            clip.addSubview(container)
-            let glass = NSGlassEffectView(frame: container.bounds)
-            glass.style = .regular
-            glass.cornerRadius = 30
-            self.glass = glass
-            container.addSubview(glass)
-            let hosting = NSHostingView(rootView: root)
-            hosting.wantsLayer = true
-            hosting.clipsToBounds = false
-            hosting.frame = panelRect
-            self.hosting = hosting
-            addSubview(hosting)
+            // Installing an NSHostingView from updateNSView can re-enter
+            // AppKit's constraint walk while SwiftUI is still updating the
+            // outer host. Keep only the latest value and attach it next turn,
+            // once this view has real window-backed geometry.
+            pendingRootView = root
+            scheduleContentInstallation()
         }
         state.onLayout = { [weak self] in self?.scheduleOpeningIfReady() }
         if phase == .preparing {
@@ -393,16 +394,88 @@ final class CAFolderPresentationHost: NSView {
                 hosting?.alphaValue = 0
                 glass?.alphaValue = 0
             }
-            if preparationTimeout == nil {
-                let timeout = DispatchWorkItem { [weak self] in
-                    self?.startOpeningIfReady(allowUnreadyIcons: true)
-                    if self?.phase == .preparing { self?.finishOpening() }
-                }
-                preparationTimeout = timeout
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: timeout)
-            }
+            schedulePreparationTimeoutIfNeeded()
         }
         needsLayout = true
+    }
+
+    private func scheduleStoreDrivenClose(appStore: AppStore) {
+        guard !storeCloseScheduled else { return }
+        storeCloseScheduled = true
+        storeCloseGeneration += 1
+        let generation = storeCloseGeneration
+        DispatchQueue.main.async { [weak self, weak appStore] in
+            guard let self, self.storeCloseGeneration == generation else { return }
+            self.storeCloseScheduled = false
+            guard let appStore, appStore.openFolder == nil else { return }
+            // An ongoing drag is handed directly to the main grid; retaining a
+            // closing panel would cover that grid and duplicate the dragged app.
+            if appStore.handoffDraggingApp != nil { self.dismissImmediately() }
+            else { self.close() }
+        }
+    }
+
+    private func scheduleContentInstallation() {
+        guard !contentInstallScheduled, pendingRootView != nil, phase == .preparing else { return }
+        contentInstallScheduled = true
+        let generation = transitionGeneration
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.transitionGeneration == generation else { return }
+            self.contentInstallScheduled = false
+            self.installPendingContentIfReady()
+        }
+    }
+
+    private func installPendingContentIfReady() {
+        guard phase == .preparing, hosting == nil, let root = pendingRootView,
+              window != nil,
+              bounds.width.isFinite, bounds.height.isFinite,
+              bounds.width > 1, bounds.height > 1,
+              panelRect.width.isFinite, panelRect.height.isFinite,
+              panelRect.width > 1, panelRect.height > 1 else { return }
+
+        pendingRootView = nil
+        // Keep the clipping mask outside the transformed material subtree.
+        let clip = NSView(frame: bounds)
+        clip.wantsLayer = true
+        clip.clipsToBounds = false
+        glassClipContainer = clip
+        addSubview(clip)
+        let container = NSView(frame: bounds)
+        container.wantsLayer = true
+        container.clipsToBounds = false
+        glassContainer = container
+        clip.addSubview(container)
+        let glass = NSGlassEffectView(frame: container.bounds)
+        glass.style = .regular
+        glass.cornerRadius = 30
+        glass.alphaValue = 0
+        self.glass = glass
+        container.addSubview(glass)
+
+        let hosting = NSHostingView(rootView: root)
+        // The presentation has an explicit frame and never participates in
+        // intrinsic-size negotiation with its SwiftUI parent. Avoid measuring
+        // this nested host during AppKit's ancestor constraint traversal.
+        hosting.sizingOptions = []
+        hosting.wantsLayer = true
+        hosting.clipsToBounds = false
+        hosting.frame = panelRect
+        hosting.alphaValue = 0
+        self.hosting = hosting
+        addSubview(hosting)
+        schedulePreparationTimeoutIfNeeded()
+        needsLayout = true
+    }
+
+    private func schedulePreparationTimeoutIfNeeded() {
+        guard phase == .preparing, hosting != nil, preparationTimeout == nil else { return }
+        let timeout = DispatchWorkItem { [weak self] in
+            self?.startOpeningIfReady(allowUnreadyIcons: true)
+            if self?.phase == .preparing { self?.finishOpening() }
+        }
+        preparationTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: timeout)
     }
 
     private func reverseClosing() {
@@ -710,12 +783,16 @@ final class CAFolderPresentationHost: NSView {
     }
 
     func dismissImmediately() {
+        storeCloseGeneration += 1
+        storeCloseScheduled = false
         transitionGeneration += 1
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         defer { CATransaction.commit() }
         completion?.cancel(); completion = nil
         preparationTimeout?.cancel(); preparationTimeout = nil
+        pendingRootView = nil
+        contentInstallScheduled = false
         reopeningGlassFrame = nil
         state?.onLayout = nil
         state?.grid?.finishFolderPresentation()

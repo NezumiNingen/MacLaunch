@@ -112,6 +112,8 @@ extension FolderGlassOverlay {
     host = work / 'LaunchNext/CAFolderPresentation.swift'
     host.write_text(host.read_text() + '''
 extension CAFolderPresentationHost {
+    var probeHasHosting: Bool { hosting != nil }
+    var probeHasPendingRoot: Bool { pendingRootView != nil }
     var probeTitleShadow: BackgroundLabelContrast.Shadow? { hosting?.rootView.labelShadow }
     var probeTitleColor: NSColor? { hosting?.rootView.labelColorOverride }
     var probePhase: String { String(describing: phase) }
