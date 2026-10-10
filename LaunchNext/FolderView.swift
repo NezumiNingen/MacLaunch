@@ -16,9 +16,9 @@ struct FolderView: View {
     @State private var forceRefreshTrigger: UUID = UUID()
     @State private var folderCurrentPage: Int = 0
     @State private var folderPageCount: Int = 1
-    @State private var folderVerticalScrollOffset: CGFloat = 0
+    @State private var fallbackItemsPerPage: Int = 30
+    @State private var fallbackScrollPosition: Int? = 0
     @FocusState private var isTextFieldFocused: Bool
-    @Namespace private var reorderNamespaceFolder
     // 键盘导航
     @State private var selectedIndex: Int? = nil
     @State private var isKeyboardNavigationActive: Bool = false
@@ -28,7 +28,6 @@ struct FolderView: View {
     @State private var dragPreviewPosition: CGPoint = .zero
     @State private var dragPreviewScale: CGFloat = 1.2
     @State private var pendingDropIndex: Int? = nil
-    @State private var scrollOffsetY: CGFloat = 0
     @State private var outOfBoundsBeganAt: Date? = nil
     @State private var hasHandedOffDrag: Bool = false
     private let outOfBoundsDwell: TimeInterval = 0.0
@@ -40,11 +39,10 @@ struct FolderView: View {
         FileManager.default.fileExists(atPath: app.url.path)
     }
     
-    // 优化间距和布局参数
+    // Layout metrics scale with the current display instead of inheriting fixed row/column counts.
     private var uiScale: CGFloat { LaunchpadUIMetrics.overallScale }
     private var spacing: CGFloat { 30 * uiScale }
-    // 动态列数，根据窗口宽度与单元最小宽度自适应
-    @State private var columnsCount: Int = 4
+    @State private var columnsCount: Int = 6
     private var gridPadding: CGFloat { 16 * uiScale }
     private var titlePadding: CGFloat { 16 * uiScale }
     private var folderTitleHeight: CGFloat { 72 * uiScale }
@@ -104,8 +102,14 @@ struct FolderView: View {
         .onChange(of: folder.id) {
             resetFolderPagingState()
         }
-        .onChange(of: appStore.folderLayoutMode) {
-            resetFolderPagingState()
+        .onChange(of: selectedIndex) { _, index in
+            guard !appStore.useCAGridRenderer,
+                  let index,
+                  fallbackItemsPerPage > 0 else { return }
+            let page = index / fallbackItemsPerPage
+            if page != folderCurrentPage {
+                folderCurrentPage = page
+            }
         }
         .onChange(of: appStore.voiceFeedbackEnabled) { _, enabled in
             if enabled {
@@ -147,30 +151,16 @@ struct FolderView: View {
 
     @ViewBuilder
     private var folderContent: some View {
-        if shouldScrollFolderTitleWithContent {
+        VStack(spacing: 0) {
+            folderTitleSection
+                .frame(height: folderTitleHeight)
+
             GeometryReader { geo in
-                ZStack(alignment: .top) {
-                    appGridSection(geometry: geo)
-
-                    folderTitleSection
-                        .frame(height: folderTitleHeight)
-                        .offset(y: -min(folderVerticalScrollOffset, folderTitleHeight))
-                        .opacity(folderTitleOpacity)
-                        .allowsHitTesting(folderVerticalScrollOffset < folderTitleHeight || isEditingName)
-                }
+                appGridSection(geometry: geo)
             }
-        } else {
-            VStack(spacing: 0) {
-                folderTitleSection
-                    .frame(height: folderTitleHeight)
 
-                GeometryReader { geo in
-                    appGridSection(geometry: geo)
-                }
-
-                if shouldShowFolderPageIndicator {
-                    folderPageIndicator
-                }
+            if shouldShowFolderPageIndicator {
+                folderPageIndicator
             }
         }
     }
@@ -228,19 +218,7 @@ struct FolderView: View {
     }
 
     private var shouldShowFolderPageIndicator: Bool {
-        appStore.useCAGridRenderer && appStore.folderLayoutMode == .paged && folderPageCount > 1
-    }
-
-    private var shouldScrollFolderTitleWithContent: Bool {
-        appStore.useCAGridRenderer && appStore.folderLayoutMode == .vertical
-    }
-
-    private var folderTitleOpacity: Double {
-        if isEditingName { return 1 }
-        let fadeStart = folderTitleHeight * 0.45
-        let fadeRange = max(folderTitleHeight * 0.55, 1)
-        let progress = min(max((folderVerticalScrollOffset - fadeStart) / fadeRange, 0), 1)
-        return Double(1 - progress)
+        folderPageCount > 1
     }
 
     private var safeFolderCurrentPage: Int {
@@ -267,25 +245,30 @@ struct FolderView: View {
     private func resetFolderPagingState() {
         folderCurrentPage = 0
         folderPageCount = 1
-        folderVerticalScrollOffset = 0
     }
     
     @ViewBuilder
     private func appGridSection(geometry geo: GeometryProxy) -> some View {
-        // 初步估算（用当前列数）
-        let baseColumnWidth = computeColumnWidth(containerWidth: geo.size.width, columns: columnsCount)
-        let baseAppHeight = computeAppHeight(containerHeight: geo.size.height, columns: columnsCount)
-        let computedIcon = min(baseColumnWidth, baseAppHeight) * 0.75
-        let iconSize: CGFloat = preferredIconSize ?? computedIcon
-        // 固定为 6 列（还原文件夹内部原布局）
-        let desiredColumns = 6
-        // 使用自适应列数重新计算尺寸
-        let recomputedColumnWidth = computeColumnWidth(containerWidth: geo.size.width, columns: desiredColumns)
-        let recomputedAppHeight = computeAppHeight(containerHeight: geo.size.height, columns: desiredColumns)
+        let availableGridWidth = max(1, geo.size.width - 2 * gridPadding)
+        let availableGridHeight = max(1, geo.size.height - 2 * gridPadding)
+        let baselineColumnWidth = computeColumnWidth(containerWidth: availableGridWidth, columns: 6)
+        let baselineAppHeight = computeAppHeight(containerHeight: availableGridHeight, columns: 6)
+        let iconSize: CGFloat = preferredIconSize ?? min(baselineColumnWidth, baselineAppHeight) * 0.75
+        let labelHeight = appStore.showLabels ? CGFloat(appStore.iconLabelFontSize) + 8 : 0
+        let labelTopSpacing: CGFloat = appStore.showLabels ? 6 : 0
+        let totalItemHeight = iconSize + labelTopSpacing + labelHeight
+        let minimumCellWidth = max(iconSize + 18, iconSize * 1.32)
+        let desiredColumns = max(1, min(8, Int((availableGridWidth + spacing) / (minimumCellWidth + spacing))))
+        let recomputedColumnWidth = computeColumnWidth(containerWidth: availableGridWidth, columns: desiredColumns)
+        let recomputedAppHeight = computeAppHeight(containerHeight: availableGridHeight, columns: desiredColumns)
         // 保障单元格至少能容纳传入的图标尺寸与标签区域
         let columnWidth = max(recomputedColumnWidth, iconSize)
         let appHeight = max(recomputedAppHeight, iconSize + 32 * uiScale)
         let labelWidth: CGFloat = columnWidth * 0.9
+        let minimumCellHeight = max(totalItemHeight + 12, iconSize * 1.28)
+        let rowsPerPage = max(1, min(5, Int((availableGridHeight + spacing) / (minimumCellHeight + spacing))))
+        let itemsPerPage = max(1, desiredColumns * rowsPerPage)
+        let fallbackPageCount = max(1, (visualApps.count + itemsPerPage - 1) / itemsPerPage)
 
         if appStore.useCAGridRenderer {
             CAFolderGridViewRepresentable(
@@ -293,9 +276,7 @@ struct FolderView: View {
                 folder: $folder,
                 currentPage: $folderCurrentPage,
                 pageCount: $folderPageCount,
-                verticalScrollOffset: $folderVerticalScrollOffset,
                 iconSize: iconSize,
-                verticalHeaderHeight: shouldScrollFolderTitleWithContent ? folderTitleHeight : 0,
                 onClose: onClose,
                 onLaunchApp: onLaunchApp,
                 presentationState: presentationState,
@@ -303,43 +284,66 @@ struct FolderView: View {
                 labelShadow: labelShadow,
                 initialRevealAppPath: initialRevealAppPath
             )
-            .id("ca_folder_grid_\(folder.id)_\(appStore.folderLayoutMode.rawValue)")
+            .id("ca_folder_grid_\(folder.id)")
             .onAppear { columnsCount = desiredColumns }
+            .onChange(of: desiredColumns) { _, newValue in columnsCount = newValue }
         } else {
             ZStack(alignment: .topLeading) {
-            ScrollViewReader { reader in
-            ScrollView {
-                ScrollOffsetReader { offsetY in
-                    scrollOffsetY = offsetY
-                }
-                .frame(height: 0)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: spacing), count: desiredColumns), spacing: spacing) {
-                    ForEach(Array(visualApps.enumerated()), id: \.element.id) { (idx, app) in
-                        appDraggable(
-                            app: app,
-                            appIndex: idx,
-                            containerSize: geo.size,
-                            columnWidth: columnWidth,
-                            appHeight: appHeight,
-                            iconSize: iconSize,
-                            labelWidth: labelWidth,
-                            isSelected: isKeyboardNavigationActive && selectedIndex == idx
-                        )
-                        .id(app.url.standardizedFileURL.path)
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 0) {
+                        ForEach(0..<fallbackPageCount, id: \.self) { pageIndex in
+                            let pageStart = pageIndex * itemsPerPage
+                            let pageEnd = min(pageStart + itemsPerPage, visualApps.count)
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: spacing), count: desiredColumns), spacing: spacing) {
+                                ForEach(pageStart..<pageEnd, id: \.self) { idx in
+                                    let app = visualApps[idx]
+                                    appDraggable(
+                                        app: app,
+                                        pageIndex: pageIndex,
+                                        itemsPerPage: itemsPerPage,
+                                        containerSize: geo.size,
+                                        columnWidth: columnWidth,
+                                        appHeight: appHeight,
+                                        iconSize: iconSize,
+                                        labelWidth: labelWidth,
+                                        isSelected: isKeyboardNavigationActive && selectedIndex == idx
+                                    )
+                                    .id(app.url.standardizedFileURL.path)
+                                }
+                            }
+                            .animation(LNAnimations.gridUpdate, value: pendingDropIndex)
+                            .id(forceRefreshTrigger)
+                            .padding(EdgeInsets(top: gridPadding, leading: gridPadding, bottom: gridPadding, trailing: gridPadding))
+                            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+                            .id(pageIndex)
+                        }
                     }
+                    .scrollTargetLayout()
                 }
-                .animation(LNAnimations.gridUpdate, value: pendingDropIndex)
-                .id(forceRefreshTrigger) // 使用forceRefreshTrigger强制刷新应用网格
-                .padding(EdgeInsets(top: gridPadding, leading: gridPadding, bottom: gridPadding, trailing: gridPadding))
-            }
-            .scrollIndicators(.hidden)
-            .disabled(isEditingName) // 编辑状态下禁用滚动
-            .onAppear { columnsCount = desiredColumns }
-            .onChange(of: geo.size) { _, _ in columnsCount = desiredColumns }
-            .onAppear {
-                if let path = initialRevealAppPath { reader.scrollTo(path, anchor: .center) }
-            }
-            }
+                .scrollIndicators(.hidden)
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $fallbackScrollPosition, anchor: .leading)
+                .disabled(isEditingName)
+                .onAppear {
+                    columnsCount = desiredColumns
+                    updateFallbackPaging(itemsPerPage: itemsPerPage, pageCount: fallbackPageCount)
+                    fallbackScrollPosition = folderCurrentPage
+                }
+                .onChange(of: desiredColumns) { _, newValue in columnsCount = newValue }
+                .onChange(of: fallbackScrollPosition) { _, newValue in
+                    guard let newValue, newValue != folderCurrentPage else { return }
+                    folderCurrentPage = newValue
+                }
+                .onChange(of: folderCurrentPage) { _, newValue in
+                    guard fallbackScrollPosition != newValue else { return }
+                    fallbackScrollPosition = newValue
+                }
+                .onChange(of: itemsPerPage) { _, newValue in
+                    updateFallbackPaging(itemsPerPage: newValue, pageCount: fallbackPageCount)
+                }
+                .onChange(of: fallbackPageCount) { _, newValue in
+                    updateFallbackPaging(itemsPerPage: itemsPerPage, pageCount: newValue)
+                }
 
             // 拖拽预览层
             if let draggingApp {
@@ -354,6 +358,13 @@ struct FolderView: View {
         }
             .coordinateSpace(name: "folderGrid")
         }
+    }
+
+    private func updateFallbackPaging(itemsPerPage: Int, pageCount: Int) {
+        fallbackItemsPerPage = max(1, itemsPerPage)
+        folderPageCount = max(1, pageCount)
+        folderCurrentPage = min(max(folderCurrentPage, 0), folderPageCount - 1)
+        fallbackScrollPosition = folderCurrentPage
     }
     
     // 拖拽视觉重排
@@ -392,11 +403,10 @@ struct FolderView: View {
 // MARK: - Drag helpers & builders (mirror outer logic, without folder creation)
 extension FolderView {
     private func computeAppHeight(containerHeight: CGFloat, columns: Int) -> CGFloat {
-        // 自适应列数下估算行高
         let maxRowsPerPage = Int(ceil(Double(folder.apps.count) / Double(max(columns, 1))))
         let totalRowSpacing = spacing * CGFloat(max(0, maxRowsPerPage - 1))
         let height = (containerHeight - totalRowSpacing) / CGFloat(maxRowsPerPage == 0 ? 1 : maxRowsPerPage)
-        return max(60, min(120, height)) // 优化高度范围
+        return max(60, min(120, height))
     }
     
     private func computeColumnWidth(containerWidth: CGFloat, columns: Int) -> CGFloat {
@@ -410,7 +420,8 @@ extension FolderView {
 
     @ViewBuilder
     private func appDraggable(app: AppInfo,
-                              appIndex: Int,
+                              pageIndex: Int,
+                              itemsPerPage: Int,
                               containerSize: CGSize,
                               columnWidth: CGFloat,
                               appHeight: CGFloat,
@@ -501,6 +512,8 @@ extension FolderView {
 
                         if let hoveringIndex = indexAt(point: dragPreviewPosition,
                                                        containerSize: containerSize,
+                                                       pageIndex: pageIndex,
+                                                       itemsPerPage: itemsPerPage,
                                                        columnWidth: columnWidth,
                                                        appHeight: appHeight) {
                             // 将"悬停在最后一个格子"视为插入到末尾，从而推动最后一个向前让位
@@ -543,6 +556,8 @@ extension FolderView {
                             // 视觉吸附位置：直接使用finalIndex，确保准确吸附到目标位置
                             let dropDisplayIndex = finalIndex
                             let targetCenter = cellCenter(for: dropDisplayIndex,
+                                                          pageIndex: pageIndex,
+                                                          itemsPerPage: itemsPerPage,
                                                           containerSize: containerSize,
                                                           columnWidth: columnWidth,
                                                           appHeight: appHeight)
@@ -589,20 +604,24 @@ extension FolderView {
                                       rowSpacing: spacing,
                                       pageSpacing: 0,
                                       currentPage: 0,
-                                      gridPadding: gridPadding,
-                                      scrollOffsetY: scrollOffsetY)
+                                      gridPadding: gridPadding)
     }
 
     private func cellCenter(for index: Int,
+                            pageIndex: Int,
+                            itemsPerPage: Int,
                             containerSize: CGSize,
                             columnWidth: CGFloat,
                             appHeight: CGFloat) -> CGPoint {
-        let origin = cellOrigin(for: index, containerSize: containerSize, columnWidth: columnWidth, appHeight: appHeight)
+        let localIndex = max(0, index - pageIndex * itemsPerPage)
+        let origin = cellOrigin(for: localIndex, containerSize: containerSize, columnWidth: columnWidth, appHeight: appHeight)
         return CGPoint(x: origin.x + columnWidth / 2, y: origin.y + appHeight / 2)
     }
 
     private func indexAt(point: CGPoint,
                          containerSize: CGSize,
+                         pageIndex: Int,
+                         itemsPerPage: Int,
                          columnWidth: CGFloat,
                          appHeight: CGFloat) -> Int? {
         guard let offsetInPage = GeometryUtils.indexAt(point: point,
@@ -615,72 +634,13 @@ extension FolderView {
                                                       rowSpacing: spacing,
                                                       pageSpacing: 0,
                                                       currentPage: 0,
-                                                      itemsPerPage: visualApps.count,
-                                                      gridPadding: gridPadding,
-                                                      scrollOffsetY: scrollOffsetY) else { return nil }
+                                                      itemsPerPage: itemsPerPage,
+                                                      gridPadding: gridPadding) else { return nil }
         
         let count = visualApps.count
         // 允许返回 count 作为"末尾插槽"，实现拖到最后一个之后的让位
         if count == 0 { return 0 }
-        return min(max(offsetInPage, 0), count)
-    }
-}
-
-// MARK: - Scroll offset reader for NSScrollView
-private struct ScrollOffsetReader: NSViewRepresentable {
-    var onChange: (CGFloat) -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = OffsetProxyView()
-        view.onChange = onChange
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let proxy = nsView as? OffsetProxyView else { return }
-        proxy.onChange = onChange
-        proxy.attachIfNeeded()
-    }
-
-    private final class OffsetProxyView: NSView {
-        var onChange: (CGFloat) -> Void = { _ in }
-        private var observer: NSObjectProtocol?
-
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            attachIfNeeded()
-        }
-
-        override func removeFromSuperview() {
-            detach()
-            super.removeFromSuperview()
-        }
-
-        func attachIfNeeded() {
-            guard observer == nil, let scrollView = enclosingScrollView else { return }
-            scrollView.contentView.postsBoundsChangedNotifications = true
-            observer = NotificationCenter.default.addObserver(forName: NSView.boundsDidChangeNotification,
-                                                              object: scrollView.contentView,
-                                                              queue: .main) { [weak self] _ in
-                self?.notify()
-            }
-            notify()
-        }
-
-        private func detach() {
-            if let observer {
-                NotificationCenter.default.removeObserver(observer)
-                self.observer = nil
-            }
-        }
-
-        private func notify() {
-            guard let scrollView = enclosingScrollView else { return }
-            let offsetY = scrollView.contentView.bounds.origin.y
-            onChange(offsetY)
-        }
-
-        deinit { detach() }
+        return min(max(pageIndex * itemsPerPage + offsetInPage, 0), count)
     }
 }
 // MARK: - Keyboard navigation (mirror outer behavior)

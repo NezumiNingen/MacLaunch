@@ -438,33 +438,28 @@ private extension View {
     @ViewBuilder
     func launchpadBackgroundStyle(_ style: AppStore.BackgroundStyle,
                                   cornerRadius: CGFloat,
-                                  forcedColor: Color? = nil,
                                   maskColor: Color? = nil) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        if let forcedColor {
-            self.background(forcedColor, in: shape)
-        } else {
-            switch style {
-            case .glass:
-                let base = self.liquidGlass(in: shape)
-                if let maskColor {
-                    base.background(maskColor, in: shape)
-                } else {
-                    base
-                }
-            case .blur:
-                let base = self.background(.ultraThinMaterial, in: shape)
-                if let maskColor {
-                    base.background(maskColor, in: shape)
-                } else {
-                    base
-                }
-            case .unfiltered:
-                if let maskColor {
-                    self.background(maskColor, in: shape)
-                } else {
-                    self
-                }
+        switch style {
+        case .glass:
+            let base = self.liquidGlass(in: shape)
+            if let maskColor {
+                base.background(maskColor, in: shape)
+            } else {
+                base
+            }
+        case .blur:
+            let base = self.background(.ultraThinMaterial, in: shape)
+            if let maskColor {
+                base.background(maskColor, in: shape)
+            } else {
+                base
+            }
+        case .unfiltered:
+            if let maskColor {
+                self.background(maskColor, in: shape)
+            } else {
+                self
             }
         }
     }
@@ -491,7 +486,6 @@ struct LaunchpadView: View {
     @State private var selectedIndex: Int? = nil
     @State private var isKeyboardNavigationActive: Bool = false
     @FocusState private var isSearchFieldFocused: Bool
-    @Namespace private var reorderNamespace
     @State private var handoffEventMonitor: Any? = nil
     @State private var globalMouseUpMonitor: Any? = nil
     @State private var gridOriginInWindow: CGPoint = .zero
@@ -501,11 +495,10 @@ struct LaunchpadView: View {
     @State private var currentIconSize: CGFloat = 0
     @State private var headerTotalHeight: CGFloat = 0
     @State private var headerFrameInWindow: CGRect = .zero
-    @State private var favoritesFrameInWindow: CGRect = .zero
+    @State private var autoOrganizeButtonFrameInWindow: CGRect = .zero
     @State private var pageIndicatorFrameInWindow: CGRect = .zero
     @State private var addPageButtonFrameInWindow: CGRect = .zero
     @State private var removePageButtonFrameInWindow: CGRect = .zero
-    @State private var autoOrganizeButtonFrameInWindow: CGRect = .zero
     @State private var backgroundButtonFrameInWindow: CGRect = .zero
     @State private var settingsButtonFrameInWindow: CGRect = .zero
     @State private var showBackgroundOptions = false
@@ -523,8 +516,6 @@ struct LaunchpadView: View {
     private let geometryCacheTimeout: TimeInterval = 0.1 // 100ms缓存超时
     
     // 性能监控
-    @State private var performanceMetrics: [String: TimeInterval] = [:]
-    private let enablePerformanceMonitoring = false // 设置为true启用性能监控
     @State private var isHandoffDragging: Bool = false
     private struct ScrollState {
         var isUserSwiping: Bool = false
@@ -954,7 +945,6 @@ struct LaunchpadView: View {
         .padding()
         .launchpadBackgroundStyle(effectiveBackgroundStyle,
                                   cornerRadius: appStore.isFullscreenMode ? 0 : 30,
-                                  forcedColor: appStore.developmentBackgroundOverride.color,
                                   maskColor: appStore.backgroundMaskColor(for: colorScheme))
         .contentShape(Rectangle())
         .simultaneousGesture(
@@ -1043,8 +1033,7 @@ struct LaunchpadView: View {
     }
 
     private var displayedBackgroundImage: CGImage? {
-        guard appStore.backgroundImageEnabled,
-              appStore.developmentBackgroundOverride.color == nil else {
+        guard appStore.backgroundImageEnabled else {
             return nil
         }
         return backgroundImageController.content?.image
@@ -1111,7 +1100,6 @@ struct LaunchpadView: View {
         // These areas contain controls with their own tap behavior. Header
         // whitespace already has its own dismissal catcher.
         if headerFrameInWindow.contains(point)
-            || favoritesFrameInWindow.contains(point)
             || pageIndicatorFrameInWindow.contains(point)
             || removePageButtonFrameInWindow.contains(point)
             || addPageButtonFrameInWindow.contains(point)
@@ -1205,12 +1193,6 @@ struct LaunchpadView: View {
                         .buttonStyle(.plain)
                         .help(appStore.localized(.refresh))
                     }
-                    Button {
-                        appStore.isSetting = true
-                    } label: {
-                        toolbarSymbol("ellipsis.circle")
-                    }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(.top)
@@ -1272,14 +1254,7 @@ struct LaunchpadView: View {
                 }
             }
 
-            LaunchpadFavoritesBar(appStore: appStore, onLaunch: launchApp)
-                .padding(.top, 12)
-                .reportWindowFrame { favoritesFrameInWindow = $0 }
-                .opacity(isFolderOpen ? 0.1 : 1)
-                .allowsHitTesting(!isFolderOpen)
-
-            // Keep the page slider centered, with the compact organizer capsule
-            // sitting beside it like a shorter Dynamic Island.
+            // Keep the page slider centered, with the organizer capsule beside it.
             ZStack {
                     // Keep the glass page bubble visible on a single page too;
                     // the organizer capsule remains anchored beside it.
@@ -1372,25 +1347,10 @@ struct LaunchpadView: View {
         )
     }
 
-    private func removeCurrentPage() {
-        guard canRemoveCurrentPage else { return }
-        _ = withAnimation(LNAnimations.springFast) {
-            appStore.removeCurrentPageIfEmpty()
-        }
-    }
-
-    private func addPageToRight() {
-        guard !appStore.isLayoutLocked, !isFolderOpen, !appStore.isSetting,
-              appStore.searchQuery.isEmpty else { return }
-        withAnimation(LNAnimations.springFast) {
-            appStore.addUserPage()
-        }
-    }
-
     private var autoOrganizerButton: some View {
         Button(action: organizeAppsAutomatically) {
             HStack(spacing: 5 * LaunchpadUIMetrics.overallScale) {
-                    Image(systemName: "sparkles")
+                Image(systemName: "sparkles")
                     .font(.system(size: 11 * LaunchpadUIMetrics.overallScale, weight: .semibold))
                 Text(appStore.localized(.autoOrganizeButton))
                     .font(.system(size: 11 * LaunchpadUIMetrics.overallScale, weight: .semibold))
@@ -1410,6 +1370,53 @@ struct LaunchpadView: View {
         .opacity(appStore.isLayoutLocked ? 0.5 : 1)
         .help(appStore.localized(.autoOrganizeButton))
         .accessibilityLabel(Text(appStore.localized(.autoOrganizeButton)))
+    }
+
+    private func removeCurrentPage() {
+        guard canRemoveCurrentPage else { return }
+        _ = withAnimation(LNAnimations.springFast) {
+            appStore.removeCurrentPageIfEmpty()
+        }
+    }
+
+    private func addPageToRight() {
+        guard !appStore.isLayoutLocked, !isFolderOpen, !appStore.isSetting,
+              appStore.searchQuery.isEmpty else { return }
+        withAnimation(LNAnimations.springFast) {
+            appStore.addUserPage()
+        }
+    }
+
+    private func organizeAppsAutomatically() {
+        let result = withAnimation(LNAnimations.gridUpdate) {
+            appStore.organizeAppsAutomatically()
+        }
+        let message: String
+        if result.appsOrganized > 0, result.foldersRenamed > 0 {
+            message = String(format: appStore.localized(.autoOrganizeDoneWithRenamesFormat),
+                             result.appsOrganized,
+                             result.foldersCreated,
+                             result.foldersRenamed)
+        } else if result.appsOrganized > 0 {
+            message = String(format: appStore.localized(.autoOrganizeDoneFormat),
+                             result.appsOrganized,
+                             result.foldersCreated)
+        } else if result.foldersRenamed > 0 {
+            message = String(format: appStore.localized(.autoOrganizeFoldersNamedFormat), result.foldersRenamed)
+        } else {
+            message = appStore.localized(.autoOrganizeNothingToDo)
+        }
+        let feedbackID = UUID()
+        autoOrganizationFeedbackID = feedbackID
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.68)) {
+            autoOrganizationFeedback = message
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            guard autoOrganizationFeedbackID == feedbackID else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                autoOrganizationFeedback = nil
+            }
+        }
     }
 
     private var backgroundButton: some View {
@@ -1572,38 +1579,6 @@ struct LaunchpadView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             guard pageControlButtonPressID == releaseID else { return }
             pageControlButtonIsPressed = false
-        }
-    }
-
-    private func organizeAppsAutomatically() {
-        let result = withAnimation(LNAnimations.gridUpdate) {
-            appStore.organizeAppsAutomatically()
-        }
-        let message: String
-        if result.appsOrganized > 0, result.foldersRenamed > 0 {
-            message = String(format: appStore.localized(.autoOrganizeDoneWithRenamesFormat),
-                             result.appsOrganized,
-                             result.foldersCreated,
-                             result.foldersRenamed)
-        } else if result.appsOrganized > 0 {
-            message = String(format: appStore.localized(.autoOrganizeDoneFormat),
-                             result.appsOrganized,
-                             result.foldersCreated)
-        } else if result.foldersRenamed > 0 {
-            message = String(format: appStore.localized(.autoOrganizeFoldersNamedFormat), result.foldersRenamed)
-        } else {
-            message = appStore.localized(.autoOrganizeNothingToDo)
-        }
-        let feedbackID = UUID()
-        autoOrganizationFeedbackID = feedbackID
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.68)) {
-            autoOrganizationFeedback = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
-            guard autoOrganizationFeedbackID == feedbackID else { return }
-            withAnimation(.easeInOut(duration: 0.2)) {
-                autoOrganizationFeedback = nil
-            }
         }
     }
 
@@ -3987,19 +3962,4 @@ extension LaunchpadView {
         folderHoverBeganAt = nil
     }
     
-    // 性能监控辅助函数
-    private func measurePerformance<T>(_ operation: String, _ block: () -> T) -> T {
-        guard enablePerformanceMonitoring else { return block() }
-        
-        let startTime = CFAbsoluteTimeGetCurrent()
-        let result = block()
-        let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-        
-        performanceMetrics[operation] = timeElapsed
-        if timeElapsed > 0.016 { // 超过16ms（60fps阈值）
-            print("⚠️ 性能警告: \(operation) 耗时 \(String(format: "%.3f", timeElapsed * 1000))ms")
-        }
-        
-        return result
-    }
 }

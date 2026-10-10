@@ -14,6 +14,7 @@ enum PageControlMetrics {
     static let organizerWidth: CGFloat = 72 * LaunchpadUIMetrics.overallScale
     static let organizerHeight: CGFloat = 32 * LaunchpadUIMetrics.overallScale
     static let backgroundButtonWidth: CGFloat = 72 * LaunchpadUIMetrics.overallScale
+    static let backgroundButtonHeight: CGFloat = 32 * LaunchpadUIMetrics.overallScale
     static let rowHeight: CGFloat = 36 * LaunchpadUIMetrics.overallScale
 
     private static func indicatorHalfWidth(pageCount: Int) -> CGFloat {

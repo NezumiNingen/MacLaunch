@@ -12,7 +12,7 @@ final class CompactWindowLayoutTests: XCTestCase {
         XCTAssertEqual(ultrawide.size, standard.size)
     }
 
-    func testOrdinaryDisplaysKeepExistingSizeWhenUncapped() {
+    func testOrdinaryDisplaysScaleFromAvailableScreenSize() {
         for size in [CGSize(width: 1440, height: 900), CGSize(width: 2560, height: 1600)] {
             let frame = CompactWindowLayout.frame(in: CGRect(origin: .zero, size: size), minimum: minimum)
             let oldWidth = max(size.width * 0.4, 800)
@@ -44,32 +44,4 @@ final class CompactWindowLayoutTests: XCTestCase {
         XCTAssertEqual(CompactWindowLayout.minimumSize(in: large, preferred: minimum), minimum)
     }
 
-    func testCustomLimitsKeepAspectRatioAndUseTighterDimension() {
-        let screen = CGRect(x: 0, y: 0, width: 5120, height: 1440)
-        let widthOnly = CompactWindowLayout.frame(in: screen, minimum: minimum, maximumWidth: 900)
-        XCTAssertEqual(widthOnly.size, CGSize(width: 900, height: 675))
-        let heightOnly = CompactWindowLayout.frame(in: screen, minimum: minimum, maximumHeight: 660)
-        XCTAssertEqual(heightOnly.size, CGSize(width: 880, height: 660))
-        let both = CompactWindowLayout.frame(in: screen, minimum: minimum, maximumWidth: 900, maximumHeight: 660)
-        XCTAssertEqual(both.size, heightOnly.size)
-    }
-
-    func testLargeLimitsDoNotEnlargeAutomaticSizeAndZeroRestoresIt() {
-        let screen = CGRect(x: 0, y: 0, width: 5120, height: 1440)
-        for limits in [(0, 0), (2000, 2000), (-1, -1)] {
-            let frame = CompactWindowLayout.frame(in: screen, minimum: minimum,
-                                                 maximumWidth: limits.0, maximumHeight: limits.1)
-            XCTAssertEqual(frame.size, CGSize(width: 1024, height: 768))
-        }
-    }
-
-    func testCustomLimitsRespectNormalMinimumAndSmallScreens() {
-        XCTAssertEqual(CompactWindowLayout.normalizedMaximumWidth(1), 800)
-        XCTAssertEqual(CompactWindowLayout.normalizedMaximumHeight(1), 600)
-        XCTAssertEqual(CompactWindowLayout.normalizedMaximumWidth(-1), 0)
-        XCTAssertEqual(CompactWindowLayout.normalizedMaximumHeight(0), 0)
-        let screen = CGRect(x: 0, y: 0, width: 640, height: 480)
-        let frame = CompactWindowLayout.frame(in: screen, minimum: minimum, maximumWidth: 800, maximumHeight: 600)
-        XCTAssertEqual(frame.size, screen.size)
-    }
 }

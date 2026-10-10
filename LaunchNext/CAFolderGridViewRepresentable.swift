@@ -7,9 +7,7 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
     @Binding var folder: FolderInfo
     @Binding var currentPage: Int
     @Binding var pageCount: Int
-    @Binding var verticalScrollOffset: CGFloat
     var iconSize: CGFloat
-    var verticalHeaderHeight: CGFloat
     var onClose: () -> Void
     var onLaunchApp: (AppInfo) -> Void
     var presentationState: CAFolderPresentationState? = nil
@@ -30,7 +28,7 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
         if nsView.apps != folder.apps {
             nsView.apps = folder.apps
         }
-        if appStore.folderLayoutMode == .paged, nsView.displayedPage != currentPage {
+        if nsView.displayedPage != currentPage {
             nsView.setDisplayedPage(currentPage, animated: appStore.enableAnimations)
         }
     }
@@ -42,7 +40,6 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
         view.presentationState = presentationState
         presentationState?.grid = view
         view.representedPageCount = pageCount
-        view.layoutMode = appStore.folderLayoutMode
         view.iconSize = iconSize
         view.labelFontSize = CGFloat(appStore.iconLabelFontSize)
         view.labelFontWeight = nsFontWeight(for: appStore.iconLabelFontWeight)
@@ -55,7 +52,6 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
         view.animationDuration = appStore.animationDuration
         view.isLayoutLocked = appStore.isLayoutLocked
         view.scrollSensitivity = appStore.scrollSensitivity
-        view.verticalHeaderHeight = verticalHeaderHeight
         view.contextMenuFolderID = folder.id
         let store = appStore
         let folderID = folder.id
@@ -73,7 +69,6 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
     private func wireCallbacks(_ view: CAFolderGridView) {
         let currentPageBinding = $currentPage
         let pageCountBinding = $pageCount
-        let verticalScrollOffsetBinding = $verticalScrollOffset
         view.onOpenApp = { app in
             DispatchQueue.main.async {
                 onLaunchApp(app)
@@ -91,13 +86,6 @@ struct CAFolderGridViewRepresentable: NSViewRepresentable {
                 }
                 if pageCountBinding.wrappedValue != count {
                     pageCountBinding.wrappedValue = count
-                }
-            }
-        }
-        view.onVerticalScrollOffsetChanged = { offset in
-            DispatchQueue.main.async {
-                if abs(verticalScrollOffsetBinding.wrappedValue - offset) > 0.5 {
-                    verticalScrollOffsetBinding.wrappedValue = offset
                 }
             }
         }

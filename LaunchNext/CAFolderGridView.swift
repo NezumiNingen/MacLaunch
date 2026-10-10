@@ -21,17 +21,6 @@ final class CAFolderGridView: NSView {
             if !reuseLayersForReorder(from: oldValue) { rebuildLayers() }
         }
     }
-    var layoutMode: AppStore.FolderLayoutMode = .paged {
-        didSet {
-            guard layoutMode != oldValue else { return }
-            updateLayerClipping()
-            currentPage = min(currentPage, max(pageCount - 1, 0))
-            verticalOffset = 0
-            horizontalOffset = pageOffset(for: currentPage, metrics: makeMetrics())
-            targetHorizontalOffset = horizontalOffset
-            updateLayout(animated: false)
-        }
-    }
     var iconSize: CGFloat = 72 {
         didSet {
             guard iconSize != oldValue else { return }
@@ -71,12 +60,6 @@ final class CAFolderGridView: NSView {
     var animationDuration: Double = 0.3
     var isLayoutLocked: Bool = false
     var scrollSensitivity: Double = AppStore.defaultScrollSensitivity
-    var verticalHeaderHeight: CGFloat = 0 {
-        didSet {
-            guard verticalHeaderHeight != oldValue else { return }
-            updateLayout(animated: false)
-        }
-    }
 
     var contextMenuConfiguration = AppContextMenuConfiguration()
     var contextMenuFolderID = ""
@@ -88,16 +71,8 @@ final class CAFolderGridView: NSView {
     var onContextMenuAction: ((AppContextMenuRoute) -> Void)?
     var onClose: (() -> Void)?
     var onPageStateChanged: ((Int, Int) -> Void)?
-    var onVerticalScrollOffsetChanged: ((CGFloat) -> Void)?
 
-    private let baseContentInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
-    private var contentInsets: NSEdgeInsets {
-        var insets = baseContentInsets
-        if layoutMode == .vertical {
-            insets.top += verticalHeaderHeight
-        }
-        return insets
-    }
+    private let contentInsets = NSEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
     private let columnSpacing: CGFloat = 22
     private let rowSpacing: CGFloat = 18
     private let dragOutInset: CGFloat = -14
@@ -112,7 +87,6 @@ final class CAFolderGridView: NSView {
     private var currentPage = 0
     private var horizontalOffset: CGFloat = 0
     private var targetHorizontalOffset: CGFloat = 0
-    private var verticalOffset: CGFloat = 0
     private var pageCount: Int {
         let metrics = makeMetrics()
         return max(1, (apps.count + metrics.itemsPerPage - 1) / metrics.itemsPerPage)
@@ -159,7 +133,6 @@ final class CAFolderGridView: NSView {
     private var currentHoverIndex: Int?
     private var lastReportedPage: Int?
     private var lastReportedPageCount: Int?
-    private var lastReportedVerticalOffset: CGFloat?
 
     var displayedPage: Int { currentPage }
     var displayedPageCount: Int { pageCount }
@@ -168,7 +141,7 @@ final class CAFolderGridView: NSView {
     // count. Do not capture animation endpoints using the preceding grid height.
     var representedPageCount = 1
     var isPresentationLayoutReady: Bool {
-        layoutMode != .paged || representedPageCount == pageCount
+        representedPageCount == pageCount
     }
 
     func setDisplayedPage(_ page: Int, animated: Bool) {
@@ -214,7 +187,7 @@ final class CAFolderGridView: NSView {
         super.layout()
         let revealGeometryChanged = revealLayoutSize != bounds.size
         revealLayoutSize = bounds.size
-        if layoutMode == .paged, !isPageScrollDragging, !isPageScrollAnimating, !isDraggingItem {
+        if !isPageScrollDragging, !isPageScrollAnimating, !isDraggingItem {
             let metrics = makeMetrics()
             horizontalOffset = pageOffset(for: currentPage, metrics: metrics)
             targetHorizontalOffset = horizontalOffset
@@ -325,7 +298,6 @@ final class CAFolderGridView: NSView {
         var itemsPerPage: Int
         var cellWidth: CGFloat
         var cellHeight: CGFloat
-        var contentHeight: CGFloat
         var totalItemHeight: CGFloat
         var labelHeight: CGFloat
         var labelTopSpacing: CGFloat
@@ -346,31 +318,14 @@ final class CAFolderGridView: NSView {
         let usableWidth = max(1, availableWidth - CGFloat(columns - 1) * columnSpacing)
         let cellWidth = usableWidth / CGFloat(columns)
 
-        if layoutMode == .paged {
-            let rows = max(1, min(5, Int((availableHeight + rowSpacing) / (minCellHeight + rowSpacing))))
-            let usableHeight = max(1, availableHeight - CGFloat(rows - 1) * rowSpacing)
-            let cellHeight = usableHeight / CGFloat(rows)
-            return Metrics(columns: columns,
-                           rows: rows,
-                           itemsPerPage: max(1, columns * rows),
-                           cellWidth: cellWidth,
-                           cellHeight: cellHeight,
-                           contentHeight: height,
-                           totalItemHeight: totalItemHeight,
-                           labelHeight: labelHeight,
-                           labelTopSpacing: labelTopSpacing,
-                           pageStride: width)
-        }
-
-        let rows = max(1, Int(ceil(Double(apps.count) / Double(max(columns, 1)))))
-        let cellHeight = minCellHeight
-        let contentHeight = contentInsets.top + contentInsets.bottom + CGFloat(rows) * cellHeight + CGFloat(max(rows - 1, 0)) * rowSpacing
+        let rows = max(1, min(5, Int((availableHeight + rowSpacing) / (minCellHeight + rowSpacing))))
+        let usableHeight = max(1, availableHeight - CGFloat(rows - 1) * rowSpacing)
+        let cellHeight = usableHeight / CGFloat(rows)
         return Metrics(columns: columns,
                        rows: rows,
-                       itemsPerPage: max(1, columns * max(rows, 1)),
+                       itemsPerPage: max(1, columns * rows),
                        cellWidth: cellWidth,
                        cellHeight: cellHeight,
-                       contentHeight: max(height, contentHeight),
                        totalItemHeight: totalItemHeight,
                        labelHeight: labelHeight,
                        labelTopSpacing: labelTopSpacing,
@@ -475,17 +430,10 @@ final class CAFolderGridView: NSView {
         guard bounds.width > 0, bounds.height > 0 else { return }
         let metrics = makeMetrics()
         currentPage = min(currentPage, max(pageCount - 1, 0))
-        if layoutMode == .paged {
-            targetHorizontalOffset = clampHorizontalOffset(pageOffset(for: currentPage, metrics: metrics), metrics: metrics)
-            horizontalOffset = clampHorizontalOffset(horizontalOffset, metrics: metrics)
-            if !isPageScrollDragging, !isPageScrollAnimating, !isDraggingItem {
-                horizontalOffset = targetHorizontalOffset
-            }
-            verticalOffset = 0
-        } else {
-            horizontalOffset = 0
-            targetHorizontalOffset = 0
-            verticalOffset = clampVerticalOffset(verticalOffset, metrics: metrics)
+        targetHorizontalOffset = clampHorizontalOffset(pageOffset(for: currentPage, metrics: metrics), metrics: metrics)
+        horizontalOffset = clampHorizontalOffset(horizontalOffset, metrics: metrics)
+        if !isPageScrollDragging, !isPageScrollAnimating, !isDraggingItem {
+            horizontalOffset = targetHorizontalOffset
         }
 
         CATransaction.begin()
@@ -493,16 +441,11 @@ final class CAFolderGridView: NSView {
         CATransaction.setAnimationDuration(0)
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeOut))
 
-        if layoutMode == .paged {
-            let totalWidth = CGFloat(max(pageCount, 1)) * metrics.pageStride
-            // Keep frame updates out of a transformed coordinate space; otherwise CA can leave the page container a few percent off.
-            contentLayer.transform = CATransform3DIdentity
-            contentLayer.frame = CGRect(x: 0, y: 0, width: totalWidth, height: bounds.height)
-            contentLayer.transform = CATransform3DMakeTranslation(horizontalOffset, 0, 0)
-        } else {
-            contentLayer.transform = CATransform3DIdentity
-            contentLayer.frame = bounds
-        }
+        let totalWidth = CGFloat(max(pageCount, 1)) * metrics.pageStride
+        // Keep frame updates out of a transformed coordinate space; otherwise CA can leave the page container a few percent off.
+        contentLayer.transform = CATransform3DIdentity
+        contentLayer.frame = CGRect(x: 0, y: 0, width: totalWidth, height: bounds.height)
+        contentLayer.transform = CATransform3DMakeTranslation(horizontalOffset, 0, 0)
 
         itemFrames = Array(repeating: .zero, count: apps.count)
         for (index, layer) in appLayers.enumerated() {
@@ -517,7 +460,6 @@ final class CAFolderGridView: NSView {
         if let target = landingTarget, dropLandingRect() != target { finishDropLanding() }
         CATransaction.commit()
         notifyPageStateChanged()
-        notifyVerticalScrollOffsetChanged()
     }
 
     private func frameForItem(at index: Int, metrics: Metrics) -> CGRect {
@@ -525,29 +467,19 @@ final class CAFolderGridView: NSView {
     }
 
     private func frameForGridSlot(at index: Int, metrics: Metrics) -> CGRect {
-        let pageIndex: Int
-        let localIndex: Int
-        let xOffset: CGFloat
-        if layoutMode == .paged {
-            pageIndex = index / metrics.itemsPerPage
-            localIndex = index % metrics.itemsPerPage
-            xOffset = CGFloat(pageIndex) * metrics.pageStride
-        } else {
-            pageIndex = 0
-            localIndex = index
-            xOffset = 0
-        }
-        _ = pageIndex
+        let pageIndex = index / metrics.itemsPerPage
+        let localIndex = index % metrics.itemsPerPage
+        let xOffset = CGFloat(pageIndex) * metrics.pageStride
         let col = localIndex % metrics.columns
         let row = localIndex / metrics.columns
         let x = contentInsets.left + xOffset + CGFloat(col) * (metrics.cellWidth + columnSpacing)
         let topBasedY = bounds.height - contentInsets.top - CGFloat(row + 1) * metrics.cellHeight - CGFloat(row) * rowSpacing
-        let y = topBasedY + (metrics.cellHeight - metrics.totalItemHeight) / 2 - (layoutMode == .vertical ? verticalOffset : 0)
+        let y = topBasedY + (metrics.cellHeight - metrics.totalItemHeight) / 2
         return CGRect(x: x, y: y, width: metrics.cellWidth, height: metrics.totalItemHeight)
     }
 
     private func visibleFrame(_ frame: CGRect) -> CGRect {
-        layoutMode == .paged ? frame.offsetBy(dx: horizontalOffset, dy: 0) : frame
+        frame.offsetBy(dx: horizontalOffset, dy: 0)
     }
 
     private func pageOffset(for page: Int, metrics: Metrics) -> CGFloat {
@@ -763,11 +695,7 @@ final class CAFolderGridView: NSView {
             super.scrollWheel(with: event)
             return
         }
-        if layoutMode == .paged {
-            handlePagedScroll(event)
-        } else {
-            handleVerticalScroll(event)
-        }
+        handlePagedScroll(event)
     }
 
     override func keyDown(with event: NSEvent) {
@@ -951,16 +879,6 @@ final class CAFolderGridView: NSView {
         navigateToPage(nearestPage, animated: animated)
     }
 
-    private func handleVerticalScroll(_ event: NSEvent) {
-        let metrics = makeMetrics()
-        let raw = event.scrollingDeltaY
-        let baseline = max(AppStore.defaultScrollSensitivity, 0.0001)
-        let sensitivityScale = CGFloat(max(scrollSensitivity, 0.0001) / baseline)
-        let delta = -raw * sensitivityScale
-        verticalOffset = clampVerticalOffset(verticalOffset - delta, metrics: metrics)
-        updateLayout(animated: false)
-    }
-
     private func precisePageVerticalDelta(from deltaY: CGFloat, isPrecise: Bool) -> CGFloat {
         guard isPrecise else { return -deltaY }
         return deltaY
@@ -970,7 +888,7 @@ final class CAFolderGridView: NSView {
         let target = min(max(0, page), max(pageCount - 1, 0))
         let metrics = makeMetrics()
         let resolvedOffset = clampHorizontalOffset(pageOffset(for: target, metrics: metrics), metrics: metrics)
-        if animated, page != target, layoutMode == .paged, abs(horizontalOffset - resolvedOffset) <= 0.5 {
+        if animated, page != target, abs(horizontalOffset - resolvedOffset) <= 0.5 {
             animatePageBoundaryNudge(toward: page)
             return
         }
@@ -991,7 +909,7 @@ final class CAFolderGridView: NSView {
     }
 
     private func animatePageBoundaryNudge(toward requestedPage: Int) {
-        guard layoutMode == .paged, pageCount > 0, !isPageScrollDragging else { return }
+        guard pageCount > 0, !isPageScrollDragging else { return }
         let metrics = makeMetrics()
         let page = min(max(0, currentPage), max(pageCount - 1, 0))
         let baseOffset = clampHorizontalOffset(pageOffset(for: page, metrics: metrics), metrics: metrics)
@@ -1021,13 +939,6 @@ final class CAFolderGridView: NSView {
         lastReportedPage = page
         lastReportedPageCount = count
         onPageStateChanged?(page, count)
-    }
-
-    private func notifyVerticalScrollOffsetChanged() {
-        let offset = layoutMode == .vertical ? max(0, -verticalOffset) : 0
-        guard lastReportedVerticalOffset.map({ abs($0 - offset) > 0.5 }) ?? true else { return }
-        lastReportedVerticalOffset = offset
-        onVerticalScrollOffsetChanged?(offset)
     }
 
     private func updatePageScrollAnimation() {
@@ -1062,21 +973,15 @@ final class CAFolderGridView: NSView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         CATransaction.setAnimationDuration(0)
-        contentLayer.transform = layoutMode == .paged ? CATransform3DMakeTranslation(horizontalOffset, 0, 0) : CATransform3DIdentity
+        contentLayer.transform = CATransform3DMakeTranslation(horizontalOffset, 0, 0)
         CATransaction.commit()
         updateVisibleItemFrames()
     }
 
     private func updateVisibleItemFrames() {
-        guard layoutMode == .paged else { return }
         for (index, layer) in appLayers.enumerated() where itemFrames.indices.contains(index) {
             itemFrames[index] = visibleFrame(layer.frame)
         }
-    }
-
-    private func clampVerticalOffset(_ value: CGFloat, metrics: Metrics) -> CGFloat {
-        let minOffset = min(0, bounds.height - metrics.contentHeight)
-        return min(0, max(minOffset, value))
     }
 
     private func rubberBand(_ offset: CGFloat, limit: CGFloat) -> CGFloat {
@@ -1100,25 +1005,15 @@ final class CAFolderGridView: NSView {
     private func gridIndex(at point: CGPoint) -> Int? {
         guard bounds.width > 0, bounds.height > 0 else { return nil }
         let metrics = makeMetrics()
-        if layoutMode == .paged {
-            guard !isPageScrollAnimating else { return nil }
-            let page = min(max(0, currentPage), max(pageCount - 1, 0))
-            let localX = point.x - contentInsets.left
-            let localY = bounds.height - point.y - contentInsets.top
-            guard localX >= 0, localY >= 0 else { return nil }
-            let col = Int(localX / (metrics.cellWidth + columnSpacing))
-            let row = Int(localY / (metrics.cellHeight + rowSpacing))
-            guard col >= 0, col < metrics.columns, row >= 0, row < metrics.rows else { return nil }
-            return min(apps.count, page * metrics.itemsPerPage + row * metrics.columns + col)
-        }
-
+        guard !isPageScrollAnimating else { return nil }
+        let page = min(max(0, currentPage), max(pageCount - 1, 0))
         let localX = point.x - contentInsets.left
-        let localY = bounds.height - point.y - verticalOffset - contentInsets.top
+        let localY = bounds.height - point.y - contentInsets.top
         guard localX >= 0, localY >= 0 else { return nil }
         let col = Int(localX / (metrics.cellWidth + columnSpacing))
         let row = Int(localY / (metrics.cellHeight + rowSpacing))
-        guard col >= 0, col < metrics.columns, row >= 0 else { return nil }
-        return min(apps.count, row * metrics.columns + col)
+        guard col >= 0, col < metrics.columns, row >= 0, row < metrics.rows else { return nil }
+        return min(apps.count, page * metrics.itemsPerPage + row * metrics.columns + col)
     }
 
     private func startDragging(at index: Int, point: CGPoint) {
@@ -1175,33 +1070,31 @@ final class CAFolderGridView: NSView {
             return
         }
 
-        if layoutMode == .paged {
-            let edgeDirection: Int?
-            if point.x < pageFlipEdgeWidth {
-                edgeDirection = -1
-            } else if point.x > bounds.width - pageFlipEdgeWidth {
-                edgeDirection = 1
-            } else {
-                edgeDirection = nil
-            }
-
-            if let edgeDirection {
-                if !edgeDragRequiresReentry {
-                    startEdgeFlipTimer(direction: edgeDirection)
-                }
-            } else {
-                edgeDragRequiresReentry = false
-                cancelEdgeFlipTimer()
-            }
-            guard !isPageScrollAnimating else { return }
+        let edgeDirection: Int?
+        if point.x < pageFlipEdgeWidth {
+            edgeDirection = -1
+        } else if point.x > bounds.width - pageFlipEdgeWidth {
+            edgeDirection = 1
+        } else {
+            edgeDirection = nil
         }
+
+        if let edgeDirection {
+            if !edgeDragRequiresReentry {
+                startEdgeFlipTimer(direction: edgeDirection)
+            }
+        } else {
+            edgeDragRequiresReentry = false
+            cancelEdgeFlipTimer()
+        }
+        guard !isPageScrollAnimating else { return }
 
         let hoverIndex = gridIndex(at: point)
         updateReorderPreview(targetIndex: hoverIndex == draggingIndex ? nil : hoverIndex)
     }
 
     private func startEdgeFlipTimer(direction: Int) {
-        guard layoutMode == .paged, !isPageScrollAnimating else { return }
+        guard !isPageScrollAnimating else { return }
         let targetPage = currentPage + direction
         guard targetPage >= 0, targetPage < pageCount else {
             cancelEdgeFlipTimer()
@@ -1375,7 +1268,7 @@ final class CAFolderGridView: NSView {
     }
 
     private func finishPageAnimationImmediatelyIfNeeded() {
-        guard layoutMode == .paged, isPageScrollAnimating else { return }
+        guard isPageScrollAnimating else { return }
         pageScrollSnapWorkItem?.cancel()
         pendingDragUpdateAfterPageAnimation = false
         isPageScrollAnimating = false
@@ -1390,11 +1283,7 @@ final class CAFolderGridView: NSView {
         currentHoverIndex = clampedTarget
 
         let metrics = makeMetrics()
-        if layoutMode == .paged {
-            updatePagedReorderPreview(source: source, target: clampedTarget, metrics: metrics)
-        } else {
-            updateVerticalReorderPreview(source: source, target: clampedTarget, metrics: metrics)
-        }
+        updatePagedReorderPreview(source: source, target: clampedTarget, metrics: metrics)
     }
 
     private func updatePagedReorderPreview(source: Int, target: Int?, metrics: Metrics) {
@@ -1456,46 +1345,6 @@ final class CAFolderGridView: NSView {
         CATransaction.commit()
     }
 
-    private func updateVerticalReorderPreview(source: Int, target: Int?, metrics: Metrics) {
-        let visualOrder = visualOrderForDrag(source: source, target: target)
-
-        CATransaction.begin()
-        CATransaction.setAnimationDuration(animationsEnabled ? 0.28 : 0)
-        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(controlPoints: 0.25, 1.0, 0.35, 1.0))
-
-        for index in apps.indices {
-            guard appLayers.indices.contains(index) else { continue }
-            let layer = appLayers[index]
-            if index == source {
-                layer.opacity = 0
-                continue
-            }
-            guard let visualIndex = visualOrder.firstIndex(of: index) else { continue }
-            let frame = frameForGridSlot(at: visualIndex, metrics: metrics)
-            layer.transform = CATransform3DIdentity
-            layer.frame = frame
-            if itemFrames.indices.contains(index) {
-                itemFrames[index] = visibleFrame(frame)
-            }
-            layoutSublayers(of: layer, metrics: metrics)
-            layer.opacity = 1
-        }
-
-        CATransaction.commit()
-    }
-
-    private func visualOrderForDrag(source: Int, target: Int?) -> [Int] {
-        var order = Array(apps.indices)
-        guard order.indices.contains(source) else { return order }
-        let moving = order.remove(at: source)
-        if let target {
-            order.insert(moving, at: min(max(0, target), order.count))
-        } else {
-            order.insert(moving, at: source)
-        }
-        return order
-    }
-
     private func resetReorderPreview(animated: Bool) {
         guard !appLayers.isEmpty else { return }
         let metrics = makeMetrics()
@@ -1520,24 +1369,11 @@ final class CAFolderGridView: NSView {
 
     private func ensureSelectionVisible(animated: Bool = true) {
         guard let selectedIndex else { return }
-        if layoutMode == .paged {
-            let metrics = makeMetrics()
-            let page = selectedIndex / metrics.itemsPerPage
-            if page != currentPage {
-                navigateToPage(page, animated: animated)
-            }
-            return
-        }
-        guard itemFrames.indices.contains(selectedIndex) else { return }
-        let frame = itemFrames[selectedIndex]
         let metrics = makeMetrics()
-        if frame.minY < contentInsets.bottom {
-            verticalOffset -= contentInsets.bottom - frame.minY
-        } else if frame.maxY > bounds.height - contentInsets.top {
-            verticalOffset += frame.maxY - (bounds.height - contentInsets.top)
+        let page = selectedIndex / metrics.itemsPerPage
+        if page != currentPage {
+            navigateToPage(page, animated: animated)
         }
-        verticalOffset = clampVerticalOffset(verticalOffset, metrics: metrics)
-        updateLayout(animated: animated)
     }
 
     private func updateHoverIndex(_ index: Int?) {

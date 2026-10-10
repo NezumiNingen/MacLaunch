@@ -102,20 +102,6 @@ final class AppStore: ObservableObject {
         var id: String { rawValue }
     }
 
-    enum FolderLayoutMode: String, CaseIterable, Identifiable {
-        case paged
-        case vertical
-
-        var id: String { rawValue }
-
-        var localizationKey: LocalizationKey {
-            switch self {
-            case .paged: return .folderLayoutPaged
-            case .vertical: return .folderLayoutVertical
-            }
-        }
-    }
-
     struct ModeScopedAppearanceSettings: Codable, Equatable {
         var iconScale: Double
         var iconLabelFontSize: Double
@@ -209,25 +195,6 @@ final class AppStore: ObservableObject {
         }
     }
 
-    enum DevelopmentBackgroundOverride: String, CaseIterable, Identifiable {
-        case none
-        case solidWhite
-        case solidBlack
-
-        var id: String { rawValue }
-
-        var color: Color? {
-            switch self {
-            case .none:
-                return nil
-            case .solidWhite:
-                return .white
-            case .solidBlack:
-                return .black
-            }
-        }
-    }
-
     enum SidebarIconPreset: String, CaseIterable, Identifiable {
         case large
         case medium
@@ -292,11 +259,8 @@ final class AppStore: ObservableObject {
     static let activePressScaleKey = "activePressScale"
     static let hideMenuBarKey = "hideMenuBar"
     static let useCAGridRendererKey = "useCAGridRenderer"
-    static let folderLayoutModeKey = "folderLayoutMode"
     static let windowOpenAnimationKey = "windowOpenAnimationEnabled"
     static let windowShadowEnabledKey = "windowShadowEnabled"
-    static let compactWindowMaxWidthKey = "compactWindowMaxWidth"
-    static let compactWindowMaxHeightKey = "compactWindowMaxHeight"
     static let windowAnimationDurationKey = "windowAnimationDuration"
     static let developmentEnableCLICodeKey = "developmentEnableCLICode"
     static let showQuarantineRemovalActionKey = "showQuarantineRemovalAction"
@@ -323,17 +287,6 @@ final class AppStore: ObservableObject {
     static let pageIndicatorPerDisplayEnabledKey = "pageIndicatorPerDisplayEnabled"
     static let pageIndicatorPerDisplayOverridesKey = "pageIndicatorPerDisplayOverrides"
     static let dualModeAppearanceSettingsKey = "dualModeAppearanceSettings"
-    private static let fixedAppearancePreferenceKeys: Set<String> = [
-        backgroundMaskEnabledKey, backgroundMaskLightKey, backgroundMaskDarkKey,
-        folderLiquidGlassKey, folderQuickLaunchEnabledKey, windowOpenAnimationKey, windowAnimationDurationKey,
-        "enableAnimations", "animationDuration", rememberPageKey, gridColumnsKey, gridRowsKey,
-        columnSpacingKey, rowSpacingKey, hoverMagnificationScaleKey, activePressScaleKey,
-        hoverMagnificationKey, activePressEffectKey, "iconScale", "iconLabelFontSize",
-        folderPreviewHighResKey, sidebarIconPresetKey, iconLabelFontWeightKey, "enableDropPrediction",
-        "folderPopoverWidthFactor", "folderPopoverHeightFactor", folderDropZoneScaleKey,
-        "pageIndicatorOffset", pageIndicatorTopPaddingKey,
-        pageIndicatorPerDisplayEnabledKey, pageIndicatorPerDisplayOverridesKey
-    ]
     private static let soundEffectsEnabledKey = "soundEffectsEnabled"
 
     static func loadFolderLiquidGlassEnabled(from defaults: UserDefaults = .standard) -> Bool {
@@ -378,7 +331,6 @@ final class AppStore: ObservableObject {
     private static let voiceFeedbackEnabledKey = "voiceFeedbackEnabled"
     static let folderDropZoneScaleKey = "folderDropZoneScale"
     static let pageIndicatorTopPaddingKey = "pageIndicatorTopPadding"
-    // private static let aiFeatureEnabledKey = "aiFeatureEnabled"
 
     private static func loadHiddenApps() -> Set<String> {
         if let array = UserDefaults.standard.array(forKey: hiddenAppsKey) as? [String] {
@@ -395,27 +347,8 @@ final class AppStore: ObservableObject {
         return .glass
     }
 
-    private static func loadFolderLayoutMode(from defaults: UserDefaults = .standard,
-                                             isExistingInstall: Bool? = nil) -> FolderLayoutMode {
-        if let raw = defaults.string(forKey: folderLayoutModeKey),
-           let mode = FolderLayoutMode(rawValue: raw) {
-            return mode
-        }
-        let existingInstall = isExistingInstall ?? (
-            defaults.object(forKey: useCAGridRendererKey) != nil ||
-            defaults.object(forKey: "isFullscreenMode") != nil ||
-            defaults.object(forKey: gridColumnsKey) != nil
-        )
-        return existingInstall ? .vertical : .paged
-    }
-
     private static let defaultBackgroundMaskOpacity: Double = 0.1
     private static let defaultBackgroundMaskColor = RGBAColor(red: 0, green: 0, blue: 0, alpha: defaultBackgroundMaskOpacity)
-
-    private static func loadBackgroundMaskEnabled() -> Bool {
-        if UserDefaults.standard.object(forKey: backgroundMaskEnabledKey) == nil { return false }
-        return UserDefaults.standard.bool(forKey: backgroundMaskEnabledKey)
-    }
 
     private static func loadBackgroundMaskColor(forKey key: String) -> RGBAColor {
         guard let data = UserDefaults.standard.data(forKey: key) else {
@@ -466,6 +399,8 @@ final class AppStore: ObservableObject {
         defaults.removeObject(forKey: backgroundMaskLightKey)
         defaults.removeObject(forKey: backgroundMaskDarkKey)
         defaults.removeObject(forKey: pageIndicatorPerDisplayOverridesKey)
+        defaults.removeObject(forKey: "compactWindowMaxWidth")
+        defaults.removeObject(forKey: "compactWindowMaxHeight")
     }
 
     private static let defaultColumnSpacing: Double = 20
@@ -592,7 +527,6 @@ final class AppStore: ObservableObject {
     }
 
     // Development-only override to capture flat screenshots quickly.
-    @Published var developmentBackgroundOverride: DevelopmentBackgroundOverride = .none
 
     @Published var developmentEnableCLICode: Bool = {
         if UserDefaults.standard.object(forKey: AppStore.developmentEnableCLICodeKey) == nil { return false }
@@ -637,90 +571,6 @@ final class AppStore: ObservableObject {
 
     @Published private(set) var sidebarIconPreset: SidebarIconPreset = .large
 
-    // One catalogue supplies both effective export values and the appearance
-    // import allowlist. Reading it must not register or persist defaults.
-    private var appearanceBackupValues: [String: Any] {
-        [
-            Self.sidebarIconPresetKey: sidebarIconPreset.rawValue,
-            Self.backgroundStyleKey: launchpadBackgroundStyle.rawValue,
-            Self.backgroundImageEnabledKey: backgroundImageEnabled,
-            Self.backgroundImageSourceKey: backgroundImageSource.rawValue,
-            Self.customBackgroundImagePathKey: customBackgroundImagePath,
-            Self.backgroundMaskEnabledKey: backgroundMaskEnabled,
-            "hideDock": hideDock,
-            Self.hideMenuBarKey: hideMenuBar,
-            "enableAnimations": enableAnimations,
-            Self.windowOpenAnimationKey: enableWindowOpenAnimation,
-            Self.windowShadowEnabledKey: windowShadowEnabled,
-            Self.compactWindowMaxWidthKey: compactWindowMaxWidth,
-            Self.compactWindowMaxHeightKey: compactWindowMaxHeight,
-            Self.windowAnimationDurationKey: windowAnimationDuration,
-            "useLocalizedThirdPartyTitles": useLocalizedThirdPartyTitles,
-            "enableDropPrediction": enableDropPrediction,
-            Self.rememberPageKey: rememberLastPage,
-            Self.rememberedPageIndexKey: UserDefaults.standard.integer(forKey: Self.rememberedPageIndexKey),
-            "iconScale": iconScale,
-            "iconLabelFontSize": iconLabelFontSize,
-            Self.iconLabelFontWeightKey: iconLabelFontWeight.rawValue,
-            Self.gridColumnsKey: gridColumnsPerPage,
-            Self.gridRowsKey: gridRowsPerPage,
-            Self.columnSpacingKey: iconColumnSpacing,
-            Self.folderDropZoneScaleKey: folderDropZoneScale,
-            Self.folderLiquidGlassKey: folderLiquidGlassEnabled,
-            Self.folderPreviewHighResKey: enableHighResFolderPreviews,
-            Self.folderQuickLaunchEnabledKey: folderQuickLaunchEnabled,
-            Self.folderLayoutModeKey: folderLayoutMode.rawValue,
-            "pageIndicatorOffset": pageIndicatorOffset,
-            Self.pageIndicatorTopPaddingKey: pageIndicatorTopPadding,
-            Self.pageIndicatorPerDisplayEnabledKey: pageIndicatorPerDisplayEnabled,
-            "folderPopoverWidthFactor": folderPopoverWidthFactor,
-            "folderPopoverHeightFactor": folderPopoverHeightFactor,
-            Self.hoverMagnificationKey: enableHoverMagnification,
-            Self.hoverMagnificationScaleKey: hoverMagnificationScale,
-            Self.activePressEffectKey: enableActivePressEffect,
-            Self.activePressScaleKey: activePressScale,
-            "animationDuration": animationDuration,
-            Self.useCAGridRendererKey: useCAGridRenderer,
-            "showFPSOverlay": showFPSOverlay
-        ]
-    }
-
-    private var encodedAppearanceBackupValues: [String: any Encodable] {
-        [
-            Self.backgroundMaskLightKey: backgroundMaskLightColor,
-            Self.backgroundMaskDarkKey: backgroundMaskDarkColor,
-            Self.pageIndicatorPerDisplayOverridesKey: pageIndicatorOverrides,
-            Self.dualModeAppearanceSettingsKey: dualModeAppearanceSettings
-        ]
-    }
-
-    var appearanceBackupPreferenceKeys: Set<String> {
-        Set(appearanceBackupValues.keys)
-            .union(encodedAppearanceBackupValues.keys)
-            .subtracting(Self.fixedAppearancePreferenceKeys)
-    }
-
-    func preferencesForBackup(persisted: [String: Any]) throws -> [String: Any] {
-        var result = persisted
-        result.merge(appearanceBackupValues) { _, effectiveValue in effectiveValue }
-        let encoder = JSONEncoder()
-        for (key, value) in encodedAppearanceBackupValues {
-            result[key] = try encoder.encode(value)
-        }
-        // Developer tooling and diagnostic logging remain local to this Mac.
-        result.removeValue(forKey: Self.showQuarantineRemovalActionKey)
-        result.removeValue(forKey: WallpaperDiagnostics.enabledKey)
-        result.removeValue(forKey: AppUsageHistory.storageKey)
-        // These values are fixed by the app and the locked vertical spacing is local.
-        result.removeValue(forKey: "isFullscreenMode")
-        result.removeValue(forKey: "showLabels")
-        result.removeValue(forKey: Self.rowSpacingKey)
-        for key in Self.fixedAppearancePreferenceKeys {
-            result.removeValue(forKey: key)
-        }
-        return result
-    }
-
     private static func writeDefaultAppearancePreferences(to defaults: UserDefaults) {
         defaults.set(SidebarIconPreset.large.rawValue, forKey: Self.sidebarIconPresetKey)
         defaults.set(AppearancePreference.system.rawValue, forKey: "appearancePreference")
@@ -735,7 +585,6 @@ final class AppStore: ObservableObject {
         defaults.set(Self.iconLabelsAlwaysVisible, forKey: "showLabels")
         defaults.set(true, forKey: Self.folderPreviewHighResKey)
         defaults.set(true, forKey: Self.folderQuickLaunchEnabledKey)
-        defaults.set(FolderLayoutMode.paged.rawValue, forKey: Self.folderLayoutModeKey)
         defaults.set(false, forKey: "hideDock")
         defaults.set(false, forKey: Self.hideMenuBarKey)
         defaults.set(Self.defaultColumnSpacing, forKey: Self.columnSpacingKey)
@@ -751,8 +600,6 @@ final class AppStore: ObservableObject {
         defaults.set(Self.fixedWindowAnimationDuration, forKey: "animationDuration")
         defaults.set(true, forKey: Self.windowOpenAnimationKey)
         defaults.set(false, forKey: Self.windowShadowEnabledKey)
-        defaults.set(0, forKey: Self.compactWindowMaxWidthKey)
-        defaults.set(0, forKey: Self.compactWindowMaxHeightKey)
         defaults.set(Self.fixedWindowAnimationDuration, forKey: Self.windowAnimationDurationKey)
         defaults.set(true, forKey: "useLocalizedThirdPartyTitles")
         defaults.set(Self.defaultPageIndicatorOffset, forKey: "pageIndicatorOffset")
@@ -795,7 +642,6 @@ final class AppStore: ObservableObject {
         folderLiquidGlassEnabled = true
         enableHighResFolderPreviews = true
         folderQuickLaunchEnabled = true
-        folderLayoutMode = Self.loadFolderLayoutMode(from: defaults, isExistingInstall: nil)
         hideDock = defaults.object(forKey: "hideDock") as? Bool ?? false
         hideMenuBar = defaults.object(forKey: Self.hideMenuBarKey) as? Bool ?? false
         iconColumnSpacing = Self.defaultColumnSpacing
@@ -812,8 +658,6 @@ final class AppStore: ObservableObject {
         showFPSOverlay = defaults.object(forKey: "showFPSOverlay") as? Bool ?? false
         enableWindowOpenAnimation = true
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
-        compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
-        compactWindowMaxHeight = CompactWindowLayout.normalizedMaximumHeight(defaults.integer(forKey: Self.compactWindowMaxHeightKey))
         windowAnimationDuration = Self.fixedWindowAnimationDuration
         rememberLastPage = true
 
@@ -1180,16 +1024,6 @@ final class AppStore: ObservableObject {
         }
     }
 
-    @Published var folderLayoutMode: FolderLayoutMode = AppStore.loadFolderLayoutMode() {
-        didSet {
-            guard folderLayoutMode != oldValue else { return }
-            UserDefaults.standard.set(folderLayoutMode.rawValue, forKey: Self.folderLayoutModeKey)
-            DispatchQueue.main.async { [weak self] in
-                self?.triggerFolderUpdate()
-            }
-        }
-    }
-
     @Published var hideDock: Bool = {
         if UserDefaults.standard.object(forKey: "hideDock") == nil { return false }
         return UserDefaults.standard.bool(forKey: "hideDock")
@@ -1357,39 +1191,6 @@ final class AppStore: ObservableObject {
 
     @Published private(set) var enableWindowOpenAnimation = true {
         didSet { UserDefaults.standard.set(enableWindowOpenAnimation, forKey: Self.windowOpenAnimationKey) }
-    }
-
-    @Published var compactWindowMaxWidth = 0 {
-        didSet {
-            let normalized = CompactWindowLayout.normalizedMaximumWidth(compactWindowMaxWidth)
-            if compactWindowMaxWidth != normalized {
-                compactWindowMaxWidth = normalized
-                return
-            }
-            guard compactWindowMaxWidth != oldValue else { return }
-            UserDefaults.standard.set(compactWindowMaxWidth, forKey: Self.compactWindowMaxWidthKey)
-            refreshCompactWindowSize()
-        }
-    }
-
-    @Published var compactWindowMaxHeight = 0 {
-        didSet {
-            let normalized = CompactWindowLayout.normalizedMaximumHeight(compactWindowMaxHeight)
-            if compactWindowMaxHeight != normalized {
-                compactWindowMaxHeight = normalized
-                return
-            }
-            guard compactWindowMaxHeight != oldValue else { return }
-            UserDefaults.standard.set(compactWindowMaxHeight, forKey: Self.compactWindowMaxHeightKey)
-            refreshCompactWindowSize()
-        }
-    }
-
-    private func refreshCompactWindowSize() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self, !self.isFullscreenMode else { return }
-            AppDelegate.shared?.updateWindowMode(isFullscreen: false)
-        }
     }
 
     @Published var windowShadowEnabled = false {
@@ -1612,7 +1413,6 @@ final class AppStore: ObservableObject {
     private var hasAppliedOrderFromStore: Bool = false
     
     // 后台刷新队列与节流
-    private var gridRefreshWorkItem: DispatchWorkItem?
     private var customTitleRefreshWorkItem: DispatchWorkItem?
     private var searchQueryWorkItem: DispatchWorkItem?
     private let fsEventsQueue = DispatchQueue(label: "app.store.fsevents")
@@ -2027,24 +1827,11 @@ final class AppStore: ObservableObject {
 
     init() {
         let defaults = UserDefaults.standard
-        let existingInstallBeforeDefaults =
-            defaults.object(forKey: Self.useCAGridRendererKey) != nil ||
-            defaults.object(forKey: "isFullscreenMode") != nil ||
-            defaults.object(forKey: Self.gridColumnsKey) != nil
+        defaults.removeObject(forKey: "folderLayoutMode")
         Self.enforceFixedAppearancePreferences(in: defaults)
-        compactWindowMaxWidth = CompactWindowLayout.normalizedMaximumWidth(defaults.integer(forKey: Self.compactWindowMaxWidthKey))
-        compactWindowMaxHeight = CompactWindowLayout.normalizedMaximumHeight(defaults.integer(forKey: Self.compactWindowMaxHeightKey))
         windowShadowEnabled = defaults.object(forKey: Self.windowShadowEnabledKey) as? Bool ?? false
         Self.migrateFolderLiquidGlassDefaultIfNeeded(from: defaults)
         folderLiquidGlassEnabled = Self.loadFolderLiquidGlassEnabled(from: defaults)
-        if defaults.object(forKey: Self.folderLayoutModeKey) == nil {
-            let initialFolderLayout = Self.loadFolderLayoutMode(from: defaults, isExistingInstall: existingInstallBeforeDefaults)
-            defaults.set(initialFolderLayout.rawValue, forKey: Self.folderLayoutModeKey)
-            self.folderLayoutMode = initialFolderLayout
-        } else {
-            self.folderLayoutMode = Self.loadFolderLayoutMode(from: defaults, isExistingInstall: existingInstallBeforeDefaults)
-        }
-
         // Migrate existing installations from any saved compact/hidden-label settings.
         defaults.set(Self.classicLaunchpadAlwaysEnabled, forKey: "isFullscreenMode")
         defaults.set(Self.iconLabelsAlwaysVisible, forKey: "showLabels")
@@ -2944,118 +2731,6 @@ final class AppStore: ObservableObject {
         return true
     }
     
-    /// 严格保持现有顺序的重建方法
-    private func rebuildItemsWithStrictOrderPreservation(currentItems: [LaunchpadItem]) {
-        
-        var newItems: [LaunchpadItem] = []
-        let appsInFolders = Set(self.folders.flatMap { $0.apps })
-        
-        // 严格保持现有项目的顺序和位置
-        for (_, item) in currentItems.enumerated() {
-            switch item {
-            case .folder(let folder):
-                // 检查文件夹是否仍然存在
-                if self.folders.contains(where: { $0.id == folder.id }) {
-                    // 更新文件夹引用，保持原有位置
-                    if let updatedFolder = self.folders.first(where: { $0.id == folder.id }) {
-                        newItems.append(.folder(updatedFolder))
-                    } else {
-                        // 文件夹被删除，保持空槽位
-                        newItems.append(.empty(UUID().uuidString))
-                    }
-                } else {
-                    // 文件夹被删除，保持空槽位
-                    newItems.append(.empty(UUID().uuidString))
-                }
-                
-            case .app(let app):
-                let standardizedPath = standardizedFilePath(app.url.path)
-                // 检查应用是否仍然存在
-                if self.apps.contains(where: { standardizedFilePath($0.url.path) == standardizedPath }) {
-                    if !appsInFolders.contains(app) {
-                        // 应用仍然存在且不在文件夹中，保持原有位置
-                        newItems.append(.app(app))
-                    } else {
-                        // 应用现在在文件夹中，保持空槽位
-                        newItems.append(.empty(UUID().uuidString))
-                    }
-                } else {
-                    // 应用缺失：转换为占位符
-                    if let placeholder = updateMissingPlaceholder(path: standardizedPath, displayName: app.name) {
-                        newItems.append(.missingApp(placeholder))
-                    } else {
-                        newItems.append(.empty(UUID().uuidString))
-                    }
-                }
-            case .missingApp(let placeholder):
-                if let item = currentMissingAppItem(for: placeholder) {
-                    newItems.append(item)
-                } else {
-                    newItems.append(.empty(UUID().uuidString))
-                }
-            case .empty(let token):
-                // 保持空槽位，维持页面布局
-                newItems.append(.empty(token))
-            }
-        }
-
-        // 添加新增的自由应用（不在任何文件夹中）到最后一页的最后面
-        let existingAppPaths = Set(newItems.compactMap { item -> String? in
-            switch item {
-            case .app(let app):
-                return standardizedFilePath(app.url.path)
-            case .missingApp(let placeholder):
-                return standardizedFilePath(placeholder.bundlePath)
-            default:
-                return nil
-            }
-        })
-        
-        let newFreeApps = self.apps.filter { app in
-            !appsInFolders.contains(app) && !existingAppPaths.contains(standardizedFilePath(app.url.path))
-        }
-        
-        if !newFreeApps.isEmpty {
-            var pendingApps = newFreeApps
-            let itemsPerPage = self.itemsPerPage
-
-            if newItems.count > 0 {
-                let lastPageStart = ((newItems.count - 1) / itemsPerPage) * itemsPerPage
-                let lastPageIndices = Array(lastPageStart..<newItems.count)
-                let emptyIndices = lastPageIndices.filter { index in
-                    if case .empty = newItems[index] { return true }
-                    return false
-                }
-                let fillCount = min(pendingApps.count, emptyIndices.count)
-                for i in 0..<fillCount {
-                    newItems[emptyIndices[i]] = .app(pendingApps.removeFirst())
-                }
-            }
-
-            if !pendingApps.isEmpty {
-                let remainder = newItems.count % itemsPerPage
-                if remainder != 0 {
-                    let fillCount = min(itemsPerPage - remainder, pendingApps.count)
-                    for _ in 0..<fillCount {
-                        newItems.append(.app(pendingApps.removeFirst()))
-                    }
-                }
-
-                while !pendingApps.isEmpty {
-                    for _ in 0..<itemsPerPage {
-                        if pendingApps.isEmpty {
-                            newItems.append(.empty(UUID().uuidString))
-                        } else {
-                            newItems.append(.app(pendingApps.removeFirst()))
-                        }
-                    }
-                }
-            }
-        }
-
-        self.items = filteredItemsRemovingHidden(from: newItems)
-    }
-    
     /// 智能重建项目列表，保持用户排序
     private func smartRebuildItemsWithOrderPreservation(currentItems: [LaunchpadItem], newApps: [AppInfo]) {
         
@@ -3269,33 +2944,6 @@ final class AppStore: ObservableObject {
         } catch {
         }
     }
-
-    // MARK: - AI Overlay Preview
-    //
-    // func presentAIOverlayPreview() {
-    //     // guard isAIEnabled else { return }
-    //     // DispatchQueue.main.async { [weak self] in
-    //     //     guard let self else { return }
-    //     //     AIOverlayController.shared.show(with: self)
-    //     // }
-    // }
-    //
-    // func dismissAIOverlayPreview() {
-    //     // DispatchQueue.main.async {
-    //     //     AIOverlayController.shared.hide()
-    //     // }
-    // }
-    //
-    // func toggleAIOverlayPreview() {
-    //     // guard isAIEnabled else {
-    //     //     AIOverlayController.shared.hide()
-    //     //     return
-    //     // }
-    //     // DispatchQueue.main.async { [weak self] in
-    //     //     guard let self else { return }
-    //     //     AIOverlayController.shared.toggle(with: self)
-    //     // }
-    // }
 
     func orderedFolderQuickLaunchApps(in folder: FolderInfo) -> [AppInfo] {
         let resolvedFolder = folders.first(where: { $0.id == folder.id }) ?? folder
@@ -4129,7 +3777,6 @@ final class AppStore: ObservableObject {
             Self.folderLiquidGlassKey,
             Self.folderPreviewHighResKey,
             Self.folderQuickLaunchEnabledKey,
-            Self.folderLayoutModeKey,
             "hideDock",
             Self.hideMenuBarKey,
             Self.gridColumnsKey,
@@ -4148,8 +3795,8 @@ final class AppStore: ObservableObject {
             "animationDuration",
             Self.windowOpenAnimationKey,
             Self.windowShadowEnabledKey,
-            Self.compactWindowMaxWidthKey,
-            Self.compactWindowMaxHeightKey,
+            "compactWindowMaxWidth",
+            "compactWindowMaxHeight",
             Self.windowAnimationDurationKey,
             "useLocalizedThirdPartyTitles",
             "pageIndicatorOffset",
@@ -5174,111 +4821,6 @@ final class AppStore: ObservableObject {
         }
     }
     
-    // MARK: - 导出应用排序功能
-    /// 导出应用排序为JSON格式
-    func exportAppOrderAsJSON() -> String? {
-        reconcileFolderQuickLaunchPinsInCurrentLayout()
-        let exportData = buildExportData()
-        
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: exportData, options: [.prettyPrinted, .sortedKeys])
-            return String(data: jsonData, encoding: .utf8)
-        } catch {
-            return nil
-        }
-    }
-    
-    /// 构建导出数据
-    private func buildExportData() -> [String: Any] {
-        var pages: [[String: Any]] = []
-        let itemsPerPage = self.itemsPerPage
-        
-        for (index, item) in items.enumerated() {
-            let pageIndex = index / itemsPerPage
-            let position = index % itemsPerPage
-            
-            var itemData: [String: Any] = [
-                "pageIndex": pageIndex,
-                "position": position,
-                "kind": itemKind(for: item),
-                "name": item.name,
-                "path": itemPath(for: item),
-                "folderApps": []
-            ]
-            
-            // 如果是文件夹，添加文件夹内的应用信息
-            if case let .folder(folder) = item {
-                itemData["folderApps"] = folder.apps.map { $0.name }
-                itemData["folderAppPaths"] = folder.apps.map { $0.url.path }
-                itemData["folderPinnedAppPaths"] = folder.pinnedAppPaths
-            }
-            
-            pages.append(itemData)
-        }
-        
-        return [
-            "exportDate": ISO8601DateFormatter().string(from: Date()),
-            "totalPages": (items.count + itemsPerPage - 1) / itemsPerPage,
-            "totalItems": items.count,
-            "fullscreenMode": isFullscreenMode,
-            "pages": pages
-        ]
-    }
-    
-    /// 获取项目类型描述
-    private func itemKind(for item: LaunchpadItem) -> String {
-        switch item {
-        case .app:
-            return "应用"
-        case .folder:
-            return "文件夹"
-        case .empty:
-            return "空槽位"
-        case .missingApp:
-            return "缺失应用"
-        }
-    }
-    
-    /// 获取项目路径
-    private func itemPath(for item: LaunchpadItem) -> String {
-        switch item {
-        case let .app(app):
-            return app.url.path
-        case let .folder(folder):
-            return "文件夹: \(folder.name)"
-        case .empty:
-            return "空槽位"
-        case let .missingApp(placeholder):
-            return "缺失应用: \(placeholder.bundlePath)"
-        }
-    }
-    
-    /// 使用系统文件保存对话框保存导出文件
-    func saveExportFileWithDialog(content: String, filename: String, fileExtension: String, fileType: String) -> Bool {
-        let savePanel = NSSavePanel()
-        savePanel.title = "保存导出文件"
-        savePanel.nameFieldStringValue = filename
-        savePanel.allowedContentTypes = [UTType(filenameExtension: fileExtension) ?? .plainText]
-        savePanel.canCreateDirectories = true
-        savePanel.isExtensionHidden = false
-        
-        // 设置默认保存位置为桌面
-        if let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first {
-            savePanel.directoryURL = desktopURL
-        }
-        
-        let response = AppDelegate.withModalDialog({ savePanel.runModal() })
-        if response == .OK, let url = savePanel.url {
-            do {
-                try content.write(to: url, atomically: true, encoding: .utf8)
-                return true
-            } catch {
-                return false
-            }
-        }
-        return false
-    }
-    
     // MARK: - 缓存管理
     
     /// 扫描完成后生成缓存
@@ -5936,479 +5478,6 @@ final class AppStore: ObservableObject {
         UserDefaults.standard.set(currentPage, forKey: Self.rememberedPageIndexKey)
     }
 
-    // MARK: - 导入应用排序功能
-    /// 从JSON数据导入应用排序
-    func importAppOrderFromJSON(_ jsonData: Data) -> Bool {
-        do {
-            let importData = try JSONSerialization.jsonObject(with: jsonData, options: [])
-            return processImportedData(importData)
-        } catch {
-            return false
-        }
-    }
-
-    @discardableResult
-    func applyMacOS26PresetLayout() -> Bool {
-        let candidates = presetCandidateAppsInCurrentOrder()
-        guard !candidates.isEmpty else { return false }
-
-        let candidateByPath = candidates.reduce(into: [String: PresetAppCandidate]()) { result, candidate in
-            result[candidate.path] = candidate
-        }
-        var unusedPaths = Set(candidates.map(\.path))
-        var rebuiltItems: [LaunchpadItem] = []
-        rebuiltItems.reserveCapacity(candidates.count + 1)
-        var rebuiltFolders: [FolderInfo] = []
-
-        for slot in LayoutPresetCatalog.macOS26Default.slots {
-            switch slot {
-            case let .app(bundleIdentifiers, aliases):
-                guard let matchedPath = matchPresetSlot(bundleIdentifiers: bundleIdentifiers,
-                                                        aliases: aliases,
-                                                        candidates: candidates,
-                                                        unusedPaths: unusedPaths),
-                      let matched = candidateByPath[matchedPath] else {
-                    continue
-                }
-                unusedPaths.remove(matchedPath)
-                rebuiltItems.append(.app(matched.app))
-            case .utilitiesFolder:
-                let folderApps = candidates
-                    .filter { unusedPaths.contains($0.path) && shouldIncludeInPresetOtherFolder($0) }
-                    .map(\.app)
-
-                guard !folderApps.isEmpty else { continue }
-                for app in folderApps {
-                    unusedPaths.remove(standardizedFilePath(app.url.path))
-                }
-
-                let folder = FolderInfo(name: localized(.layoutPresetOtherFolderTitle), apps: folderApps)
-                rebuiltFolders.append(folder)
-                rebuiltItems.append(.folder(folder))
-            }
-        }
-
-        let remainingApps = candidates
-            .filter { unusedPaths.contains($0.path) }
-            .map(\.app)
-        rebuiltItems.append(contentsOf: remainingApps.map { .app($0) })
-
-        guard !rebuiltItems.isEmpty else { return false }
-
-        apps = candidates.map(\.app)
-        pruneHiddenAppsFromAppList()
-        folders = sanitizedFolders(rebuiltFolders)
-        items = filteredItemsRemovingHidden(from: rebuiltItems)
-        openFolder = nil
-        compactItemsWithinPages()
-        removeEmptyPages()
-        currentPage = 0
-        if !searchText.isEmpty { searchText = "" }
-        refreshMissingPlaceholders()
-        triggerFolderUpdate()
-        triggerGridRefresh()
-        updateCacheAfterChanges()
-        saveAllOrder()
-        return true
-    }
-
-    private struct PresetAppCandidate {
-        let app: AppInfo
-        let path: String
-        let bundleIdentifier: String?
-        let normalizedNames: Set<String>
-    }
-
-    private func presetCandidateAppsInCurrentOrder() -> [PresetAppCandidate] {
-        var orderedApps: [AppInfo] = []
-        orderedApps.reserveCapacity(items.count + apps.count + folders.reduce(0) { $0 + $1.apps.count })
-
-        for item in items {
-            switch item {
-            case .app(let app):
-                orderedApps.append(app)
-            case .folder(let folder):
-                orderedApps.append(contentsOf: folder.apps)
-            case .empty:
-                break
-            case .missingApp:
-                break
-            }
-        }
-        orderedApps.append(contentsOf: apps)
-        for folder in folders {
-            orderedApps.append(contentsOf: folder.apps)
-        }
-
-        var seenPaths = Set<String>()
-        var result: [PresetAppCandidate] = []
-        result.reserveCapacity(orderedApps.count)
-
-        for app in orderedApps {
-            let path = standardizedFilePath(app.url.path)
-            guard !seenPaths.contains(path) else { continue }
-            guard !hiddenAppPaths.contains(path) && !hiddenAppPaths.contains(app.url.path) else { continue }
-            guard path.lowercased().hasSuffix(".app") else { continue }
-            guard FileManager.default.fileExists(atPath: path) else { continue }
-            seenPaths.insert(path)
-            result.append(presetCandidate(from: app, path: path))
-        }
-
-        return result
-    }
-
-    private func presetCandidate(from app: AppInfo, path: String) -> PresetAppCandidate {
-        let appURL = URL(fileURLWithPath: path)
-        let bundle = Bundle(url: appURL)
-        let bundleIdentifier = bundle?.bundleIdentifier?.lowercased()
-
-        var nameCandidates: [String] = [
-            app.name,
-            appURL.deletingPathExtension().lastPathComponent
-        ]
-        if let bundleDisplayName = bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String {
-            nameCandidates.append(bundleDisplayName)
-        }
-        if let bundleName = bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String {
-            nameCandidates.append(bundleName)
-        }
-
-        let normalizedNames = Set(nameCandidates.map(normalizedPresetToken).filter { !$0.isEmpty })
-        return PresetAppCandidate(app: app,
-                                  path: path,
-                                  bundleIdentifier: bundleIdentifier,
-                                  normalizedNames: normalizedNames)
-    }
-
-    private func matchPresetSlot(bundleIdentifiers: [String],
-                                 aliases: [String],
-                                 candidates: [PresetAppCandidate],
-                                 unusedPaths: Set<String>) -> String? {
-        let normalizedBundleIDs = Set(bundleIdentifiers.map { $0.lowercased() }.filter { !$0.isEmpty })
-        if !normalizedBundleIDs.isEmpty {
-            for candidate in candidates where unusedPaths.contains(candidate.path) {
-                if let bundleIdentifier = candidate.bundleIdentifier,
-                   normalizedBundleIDs.contains(bundleIdentifier) {
-                    return candidate.path
-                }
-            }
-        }
-
-        let normalizedAliases = Set(aliases.map(normalizedPresetToken).filter { !$0.isEmpty })
-        guard !normalizedAliases.isEmpty else { return nil }
-
-        for candidate in candidates where unusedPaths.contains(candidate.path) {
-            if !normalizedAliases.isDisjoint(with: candidate.normalizedNames) {
-                return candidate.path
-            }
-        }
-
-        return nil
-    }
-
-    private func normalizedPresetToken(_ rawValue: String) -> String {
-        let folded = rawValue.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
-                                      locale: .current)
-        let scalars = folded.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }
-        return String(String.UnicodeScalarView(scalars)).lowercased()
-    }
-
-    private func shouldIncludeInPresetOtherFolder(_ candidate: PresetAppCandidate) -> Bool {
-        if isAppInPresetUtilitiesFolders(candidate.path) {
-            return true
-        }
-        let lowerPath = candidate.path.lowercased()
-        if LayoutPresetCatalog.otherExtraPathSuffixes.contains(where: { lowerPath.hasSuffix($0) }) {
-            return true
-        }
-        if let bundleIdentifier = candidate.bundleIdentifier,
-           LayoutPresetCatalog.otherExtraBundleIDs.contains(bundleIdentifier) {
-            return true
-        }
-        let normalizedAliases = Set(LayoutPresetCatalog.otherExtraAliases.map(normalizedPresetToken))
-        return !normalizedAliases.isDisjoint(with: candidate.normalizedNames)
-    }
-
-    private func isAppInPresetUtilitiesFolders(_ path: String) -> Bool {
-        let normalizedPath = standardizedFilePath(path)
-        for root in LayoutPresetCatalog.utilityRootPaths {
-            if normalizedPath == root || normalizedPath.hasPrefix(root + "/") {
-                return true
-            }
-        }
-        return false
-    }
-
-    /// 从原生 macOS Launchpad 导入布局
-    func importFromNativeLaunchpad() async -> (success: Bool, message: String) {
-        guard let modelContext = self.modelContext else {
-            return (false, "数据存储未初始化")
-        }
-
-        do {
-            let importer = NativeLaunchpadImporter(modelContext: modelContext)
-            let result = try importer.importFromNativeLaunchpad()
-
-            // 导入成功后刷新应用数据
-            DispatchQueue.main.async { [weak self] in
-                self?.performInitialScanIfNeeded()
-                // 新版使用 SwiftData 的统一加载入口
-                self?.loadAllOrder()
-                self?.triggerGridRefresh()
-            }
-
-            return (true, result.summary)
-        } catch {
-            return (false, "导入失败: \(error.localizedDescription)")
-        }
-    }
-
-    /// 从旧版归档（.lmy/.zip 或直接 db）导入
-    func importFromLegacyLaunchpadArchive(url: URL) async -> (success: Bool, message: String) {
-        guard let modelContext = self.modelContext else {
-            return (false, "数据存储未初始化")
-        }
-
-        do {
-            let importer = NativeLaunchpadImporter(modelContext: modelContext)
-            let result = try importer.importFromLegacyArchive(at: url)
-
-            // 导入成功后刷新应用数据
-            DispatchQueue.main.async { [weak self] in
-                self?.performInitialScanIfNeeded()
-                self?.loadAllOrder()
-                self?.triggerGridRefresh()
-            }
-
-            return (true, result.summary)
-        } catch {
-            return (false, "导入失败: \(error.localizedDescription)")
-        }
-    }
-
-    /// 处理导入的数据并重建应用布局
-    private func processImportedData(_ importData: Any) -> Bool {
-        guard let data = importData as? [String: Any],
-              let pagesData = data["pages"] as? [[String: Any]] else {
-            return false
-        }
-        
-        // 构建应用路径到应用对象的映射
-        let appPathMap = apps.reduce(into: [String: AppInfo]()) { result, app in
-            result[app.url.path] = app
-        }
-        
-        // 重建items数组
-        var newItems: [LaunchpadItem] = []
-        var importedFolders: [FolderInfo] = []
-        
-        // 处理每一页的数据
-        for pageData in pagesData {
-            guard let kind = pageData["kind"] as? String,
-                  let name = pageData["name"] as? String else { continue }
-            
-            switch kind {
-            case "应用":
-                if let path = pageData["path"] as? String,
-                   let app = appPathMap[path] {
-                    newItems.append(.app(app))
-                } else {
-                    // 应用缺失，添加空槽位
-                    newItems.append(.empty(UUID().uuidString))
-                }
-                
-            case "文件夹":
-                if let folderApps = pageData["folderApps"] as? [String],
-                   let folderAppPaths = pageData["folderAppPaths"] as? [String] {
-                    let pinnedAppPaths = pageData["folderPinnedAppPaths"] as? [String] ?? []
-                    // 重建文件夹 - 优先使用应用路径来匹配，确保准确性
-                    let folderAppsList = folderAppPaths.compactMap { appPath in
-                        // 通过应用路径匹配，这是最准确的方式
-                        if let app = apps.first(where: { $0.url.path == appPath }) {
-                            return app
-                        }
-                        // 如果路径匹配失败，尝试通过名称匹配（备用方案）
-                        if let appName = folderApps.first(where: { _ in true }), // 获取对应的应用名称
-                           let app = apps.first(where: { $0.name == appName }) {
-                            return app
-                        }
-                        return nil
-                    }
-                    
-                    if !folderAppsList.isEmpty {
-                        // 尝试从现有文件夹中查找匹配的，保持ID一致
-                        let existingFolder = self.folders.first { existingFolder in
-                            existingFolder.name == name &&
-                            existingFolder.apps.count == folderAppsList.count &&
-                            existingFolder.apps.allSatisfy { app in
-                                folderAppsList.contains { $0.id == app.id }
-                            }
-                        }
-                        
-                        if let existing = existingFolder {
-                            // 使用现有文件夹，保持ID一致
-                            var folder = existing
-                            folder.apps = folderAppsList
-                            folder.pinnedAppPaths = pinnedAppPaths
-                            folder = folderWithValidQuickLaunchPins(folder)
-                            importedFolders.append(folder)
-                            newItems.append(.folder(folder))
-                        } else {
-                            // 创建新文件夹
-                            let folder = folderWithValidQuickLaunchPins(FolderInfo(
-                                name: name,
-                                apps: folderAppsList,
-                                pinnedAppPaths: pinnedAppPaths
-                            ))
-                            importedFolders.append(folder)
-                            newItems.append(.folder(folder))
-                        }
-                    } else {
-                        // 文件夹为空，添加空槽位
-                        newItems.append(.empty(UUID().uuidString))
-                    }
-                } else if let folderApps = pageData["folderApps"] as? [String] {
-                    // 兼容旧版本：只有应用名称，没有路径信息
-                    let folderAppsList = folderApps.compactMap { appName in
-                        apps.first { $0.name == appName }
-                    }
-                    
-                    if !folderAppsList.isEmpty {
-                        // 尝试从现有文件夹中查找匹配的，保持ID一致
-                        let existingFolder = self.folders.first { existingFolder in
-                            existingFolder.name == name &&
-                            existingFolder.apps.count == folderAppsList.count &&
-                            existingFolder.apps.allSatisfy { app in
-                                folderAppsList.contains { $0.id == app.id }
-                            }
-                        }
-                        
-                        if let existing = existingFolder {
-                            // 使用现有文件夹，保持ID一致
-                            var folder = existing
-                            folder.apps = folderAppsList
-                            folder.pinnedAppPaths = []
-                            importedFolders.append(folder)
-                            newItems.append(.folder(folder))
-                        } else {
-                            // 创建新文件夹
-                            let folder = FolderInfo(name: name, apps: folderAppsList)
-                            importedFolders.append(folder)
-                            newItems.append(.folder(folder))
-                        }
-                    } else {
-                        // 文件夹为空，添加空槽位
-                        newItems.append(.empty(UUID().uuidString))
-                    }
-                } else {
-                    // 文件夹数据无效，添加空槽位
-                    newItems.append(.empty(UUID().uuidString))
-                }
-                
-            case "空槽位":
-                newItems.append(.empty(UUID().uuidString))
-                
-            default:
-                // 未知类型，添加空槽位
-                newItems.append(.empty(UUID().uuidString))
-            }
-        }
-        
-        // 处理多出来的应用（放到最后一页）
-        let usedApps = Set(newItems.compactMap { item in
-            if case let .app(app) = item { return app }
-            return nil
-        })
-        
-        let usedAppsInFolders = Set(importedFolders.flatMap { $0.apps })
-        let allUsedApps = usedApps.union(usedAppsInFolders)
-        
-        let unusedApps = apps.filter { !allUsedApps.contains($0) }
-        
-        if !unusedApps.isEmpty {
-            // 计算需要添加的空槽位数量
-            let itemsPerPage = self.itemsPerPage
-            let currentPages = (newItems.count + itemsPerPage - 1) / itemsPerPage
-            let lastPageStart = currentPages * itemsPerPage
-            let lastPageEnd = lastPageStart + itemsPerPage
-            
-            // 确保最后一页有足够的空间
-            while newItems.count < lastPageEnd {
-                newItems.append(.empty(UUID().uuidString))
-            }
-            
-            // 将未使用的应用添加到最后一页
-            for (index, app) in unusedApps.enumerated() {
-                let insertIndex = lastPageStart + index
-                if insertIndex < newItems.count {
-                    newItems[insertIndex] = .app(app)
-                } else {
-                    newItems.append(.app(app))
-                }
-            }
-            
-            // 确保最后一页也是完整的
-            let finalPageCount = newItems.count
-            let finalPages = (finalPageCount + itemsPerPage - 1) / itemsPerPage
-            let finalLastPageStart = (finalPages - 1) * itemsPerPage
-            let finalLastPageEnd = finalLastPageStart + itemsPerPage
-            
-            // 如果最后一页不完整，添加空槽位
-            while newItems.count < finalLastPageEnd {
-                newItems.append(.empty(UUID().uuidString))
-            }
-        }
-        
-        // 验证导入的数据结构
-        
-        // 更新应用状态
-        DispatchQueue.main.async {
-            
-            // 设置新的数据
-            self.folders = self.sanitizedFolders(importedFolders)
-            self.items = self.filteredItemsRemovingHidden(from: newItems)
-            
-            
-            // 强制触发界面更新
-            self.triggerFolderUpdate()
-            self.triggerGridRefresh()
-            
-            // 保存新的布局
-            self.saveAllOrder()
-            
-            
-            // 暂时不调用页面补齐，保持导入的原始顺序
-            // 如果需要补齐，可以在用户手动操作后触发
-        }
-        
-        return true
-    }
-    
-    /// 验证导入数据的完整性
-    func validateImportData(_ jsonData: Data) -> (isValid: Bool, message: String) {
-        do {
-            let importData = try JSONSerialization.jsonObject(with: jsonData, options: [])
-            guard let data = importData as? [String: Any] else {
-                return (false, "数据格式无效")
-            }
-            
-            guard let pagesData = data["pages"] as? [[String: Any]] else {
-                return (false, "缺少页面数据")
-            }
-            
-            let totalPages = data["totalPages"] as? Int ?? 0
-            let totalItems = data["totalItems"] as? Int ?? 0
-            
-            if pagesData.isEmpty {
-                return (false, "没有找到应用数据")
-            }
-            
-            return (true, "数据验证通过，共\(totalPages)页，\(totalItems)个项目")
-        } catch {
-            return (false, "JSON解析失败: \(error.localizedDescription)")
-        }
-    }
-
     // MARK: - 更新检查功能
 
     private func scheduleAutomaticUpdateCheck() {
@@ -6551,15 +5620,6 @@ final class AppStore: ObservableObject {
             title: localized(.updateCheckFailed),
             body: message,
             releaseURL: nil
-        )
-    }
-
-    @MainActor
-    func sendTestUpdateNotification() {
-        enqueueUpdateNotification(
-            title: localized(.updateAvailable),
-            body: "\(localized(.newVersion)) 9.9.9-test",
-            releaseURL: URL(string: "https://github.com/NezumiNingen/MacLaunch/releases/latest")
         )
     }
 
